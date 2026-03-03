@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validateJWT } from "../../middlewares/validate-jwt.js";
+import { hasRole } from "../../middlewares/validate-roles.js";
 import {
     getCategories,
     createCategory,
@@ -9,15 +11,15 @@ import {
 const router = Router();
 
 // Obtener categorías (se puede filtrar por ?restaurante=ID)
-router.get('/', getCategories);
+router.get('/', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), getCategories);
 
 // Crear categoría
-router.post('/', createCategory);
+router.post('/', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), createCategory);
 
 // Actualizar categoría por ID
-router.put('/:id', updateCategory);
+router.put('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), updateCategory);
 
 // Eliminar (desactivar) categoría por ID
-router.delete('/:id', deleteCategory);
+router.delete('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), deleteCategory);
 
 export default router;
