@@ -1,7 +1,7 @@
 import Restaurant from "./restaurants-model.js";
 
 /**
- * GET - Listar con paginación
+ * GET 
  */
 export const getRestaurants = async (req, res) => {
     try {
@@ -24,15 +24,21 @@ export const getRestaurants = async (req, res) => {
             restaurants
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener restaurantes", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener", error: error.message });
     }
 };
 
 /**
- * POST - Restaurante
+ * POST Restaurante
  */
 export const createRestaurant = async (req, res) => {
     try {
+        const { nombre } = req.body;
+
+        // Validar 
+        const existe = await Restaurant.findOne({ nombre });
+        if (existe) return res.status(400).json({ success: false, message: "El restaurante ya existe" });
+
         const restaurant = new Restaurant(req.body);
         await restaurant.save();
 
@@ -42,83 +48,63 @@ export const createRestaurant = async (req, res) => {
             restaurant
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error al crear restaurante",
-            error: error.message
-        });
+        res.status(500).json({ success: false, message: "Error al crear", error: error.message });
     }
 };
 
 /**
- * PUT - Restaurante
+ * POST
+ */
+export const addTable = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const nuevaMesa = req.body;
+
+        const restaurant = await Restaurant.findById(id);
+        if (!restaurant) return res.status(404).json({ success: false, message: "Restaurante no encontrado" });
+
+        // Evitar números de mesa duplicados en el mismo restaurante
+        const mesaRepetida = restaurant.mesas.find(m => m.numero === nuevaMesa.numero);
+        if (mesaRepetida) return res.status(400).json({ success: false, message: "El número de mesa ya está registrado" });
+
+        restaurant.mesas.push(nuevaMesa);
+        await restaurant.save();
+
+        res.status(200).json({ success: true, message: "Mesa agregada", restaurant });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+/**
+ * PUT 
  */
 export const updateRestaurant = async (req, res) => {
     try {
-        // obtenemos el id de la URL
         const { id } = req.params;
-        // Al poner ...data, estamos excluyendo los campos mesas y eventos
-        // Porque no se van a actualizar
-        // Por eso ponemos mesas y eventos antes de data
         const { mesas, eventos, ...data } = req.body;
 
-        const restaurant = await Restaurant.findByIdAndUpdate(
-            id,
-            data,
-            { new: true }
-        );
+        const restaurant = await Restaurant.findByIdAndUpdate(id, data, { new: true });
+        if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
 
-        if (!restaurant) return res.status(404).json({
-            success: false,
-            message: "Restaurante no encontrado"
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Restaurante actualizado",
-            restaurant
-        });
+        res.status(200).json({ success: true, restaurant });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error al actualizar restaurante",
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
 /**
- * DELETE - Restaurante
+ * DELETE 
  */
 export const deleteRestaurant = async (req, res) => {
     try {
         const { id } = req.params;
+        const restaurant = await Restaurant.findByIdAndUpdate(id, { activo: false }, { new: true });
 
-        // Buscamos y actualizamos el estado a false
-        const restaurant = await Restaurant.findByIdAndUpdate(
-            id,
-            // Actualizamos el estado a false
-            // No eliminamos el restaurante
-            { activo: false },
-            { new: true }
-        );
+        if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
 
-        if (!restaurant) {
-            return res.status(404).json({
-                success: false,
-                message: "Restaurante no encontrado"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Restaurante desactivado correctamente"
-        });
+        res.status(200).json({ success: true, message: "Desactivado correctamente" });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error al desactivar",
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
