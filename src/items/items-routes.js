@@ -3,21 +3,29 @@ import {
     addItem,
     getItems,
     updateItem,
-    deleteItem
+    deleteItem,
+    getVariationsSummary
 } from "./items-controller.js";
+import {
+    addItemValidator,
+    updateItemValidator,
+    deleteItemValidator
+} from "../../middlewares/items-validators.js";
 
 const router = Router();
 
-// GET - Obtener items de un pedido
+// GET - Obtener items de un pedido (Solo validamos el ID del pedido)
 router.get("/:id", getItems);
 
-// POST - Agregar item a un pedido
-router.post("/:id", addItem);
+router.get("/summary/:id_restaurante", getVariationsSummary);
 
-// PUT - Actualizar un item
-router.put("/:orderId/:itemId", updateItem);
+// POST - Agregar item a un pedido con validación de body
+router.post("/:id", addItemValidator, addItem);
 
-// DELETE - Eliminar un item
-router.delete("/:orderId/:itemId", deleteItem);
+// PUT - Actualizar un item (Validamos orderId, itemId y la nueva cantidad)
+router.put("/:orderId/:itemId", updateItemValidator, updateItem);
+
+// DELETE - Eliminar un item (Validamos IDs para el $pull y el recalculo)
+router.delete("/:orderId/:itemId", deleteItemValidator, deleteItem);
 
 export default router;

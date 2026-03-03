@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 
+// Esquema para la receta (ya lo tenías, se queda igual)
 const recetaSchema = new Schema({
     nombre_insumo: {
         type: String,
@@ -11,9 +12,31 @@ const recetaSchema = new Schema({
         required: [true, 'La cantidad es obligatoria'],
         min: [0, 'La cantidad no puede ser negativa']
     }
-}, {
-    _id: true
-});
+}, { _id: true });
+
+
+const variacionSchema = new Schema({
+    nombre: {
+        type: String,
+        required: true
+    },
+    precio_adicional: {
+        type: Number,
+        default: 0
+    },
+    afecta_inventario: {
+        type: Boolean,
+        default: false
+    },
+    insumo_relacionado: {
+        type: String,
+        trim: true
+    },
+    cantidad_insumo: {
+        type: Number,
+        default: 0
+    }
+}, { _id: true });
 
 const productSchema = new Schema({
     id_restaurante: {
@@ -26,10 +49,7 @@ const productSchema = new Schema({
         required: [true, 'El nombre del producto es obligatorio'],
         trim: true
     },
-    descripcion: {
-        type: String,
-        trim: true
-    },
+    descripcion: { type: String, trim: true },
     categoria: {
         type: String,
         required: [true, 'La categoría es obligatoria'],
@@ -41,19 +61,13 @@ const productSchema = new Schema({
         required: [true, 'El precio es obligatorio'],
         min: [0, 'El precio no puede ser negativo']
     },
-    disponibilidad: {
-        type: Boolean,
-        default: true
-    },
-    foto_url: {
-        type: [String],
-        default: []
-    },
+    disponibilidad: { type: Boolean, default: true },
+    foto_url: { type: [String], default: [] },
     receta: [recetaSchema],
-    activo: {
-        type: Boolean,
-        default: true
-    }
+
+    variaciones: [variacionSchema],
+
+    activo: { type: Boolean, default: true }
 }, {
     timestamps: true,
     toJSON: {
