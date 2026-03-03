@@ -7,6 +7,10 @@ import {
     updateCategory,
     deleteCategory
 } from "./categories-controller.js";
+import {
+    validateCreateCategory,
+    validateUpdateCategory,
+} from "../../middlewares/categories-validator.js";
 
 const router = Router();
 
@@ -14,10 +18,10 @@ const router = Router();
 router.get('/', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), getCategories);
 
 // Crear categoría
-router.post('/', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), createCategory);
+router.post('/', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateCreateCategory, createCategory);
 
 // Actualizar categoría por ID
-router.put('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), updateCategory);
+router.put('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateUpdateCategory, updateCategory);
 
 // Eliminar (desactivar) categoría por ID
 router.delete('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), deleteCategory);

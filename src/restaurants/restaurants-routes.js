@@ -6,13 +6,18 @@ import {
     deleteRestaurant,
     addTable
 } from "./restaurants-controller.js";
+import {
+    validateRestaurantId,
+    validateEventoBody,
+    validateEventUpdateDelete
+} from "../../middlewares/restaurants-validator.js";
 
 const router = Router();
 
 router.get("/", getRestaurants);
-router.post("/", createRestaurant);
-router.put("/:id", updateRestaurant);
-router.delete("/:id", deleteRestaurant);
+router.post("/", validateEventoBody, createRestaurant);
+router.put("/:id", validateEventUpdateDelete, updateRestaurant);
+router.delete("/:id", validateRestaurantId, deleteRestaurant);
 
 router.post("/:id/add-table", addTable);
 
