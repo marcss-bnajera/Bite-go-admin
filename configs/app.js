@@ -50,7 +50,7 @@ const routes = (app) => {
 const initServer = async (app) => {
     // Crear la instancia de la aplicacion
     app = express();
-    const PORT = process.env.PORT || 3001;
+    const PORT = process.env.PORT || 3002;
 
     try {
         //Configuracion de los middlewares (Mi aplicaion)

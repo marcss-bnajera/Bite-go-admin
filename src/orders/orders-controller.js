@@ -126,6 +126,25 @@ export const getOrdersByRestaurant = async (req, res) => {
         });
     }
 };
+export const createOrder = async (req, res) => {
+    try {
+        const data = req.body;
+
+        const order = await Order.create(data);
+
+        res.status(201).json({
+            success: true,
+            message: "Pedido creado",
+            order
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al crear pedido",
+            error: error.message
+        });
+    }
+};
 
 /**
  * PUT - Actualizar un pedido 
@@ -153,6 +172,33 @@ export const updateOrder = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar pedido",
+            error: error.message
+        });
+    }
+};
+
+export const deleteOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const order = await Order.findByIdAndDelete(id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Pedido no encontrado"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Pedido eliminado",
+            order
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al eliminar pedido",
             error: error.message
         });
     }

@@ -48,7 +48,25 @@ export const updateReservation = async (req, res) => {
         res.status(500).json({ success: false, message: "Error al actualizar", error: error.message });
     }
 };
+export const createReservation = async (req, res) => {
+    try {
+        const data = req.body;
 
+        const reservation = await Reservation.create(data);
+
+        res.status(201).json({
+            success: true,
+            message: "Reservación creada",
+            reservation
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al crear reservación",
+            error: error.message
+        });
+    }
+};
 // DELETE - Desactivar (cancelar) una reservacion
 export const deleteReservation = async (req, res) => {
     try {

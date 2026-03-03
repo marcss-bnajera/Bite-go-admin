@@ -72,6 +72,11 @@ export const updateUser = async (req, res) => {
         const { id } = req.params;
         const { password, email, ...data } = req.body;
 
+        if (password) {
+            const salt = bcrypt.genSaltSync(10);
+            data.password = bcrypt.hashSync(password, salt);
+        }
+
         const user = await User.findByIdAndUpdate(id, data, { new: true });
 
         if (!user) return res.status(404).json({
