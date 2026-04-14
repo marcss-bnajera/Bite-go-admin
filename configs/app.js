@@ -18,11 +18,14 @@ import recipesRoutes from "../src/recipes/recipes-routes.js";
 import suppliesInventoryRoutes from "../src/suppliesInventory/suppliesInventory-routes.js";
 import reservationsRoutes from "../src/reservations/reservations-routes.js";
 import categoriesRoutes from "../src/categories/categories-routes.js";
+import swaggerUI from "swagger-ui-express";
+import swaggerJsDoc from "swagger-jsdoc";
 
 const BASE_URL = '/bite-and-go/v1';
 
 // Rutas
 import { dbConnection } from './db.js';
+import { version } from "mongoose";
 
 const middlewares = (app) => {
     app.use(helmet(helmetConfiguration));
@@ -48,6 +51,27 @@ const routes = (app) => {
     app.use(`${BASE_URL}/recipes`, recipesRoutes);
 }
 
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Bite&Go API',
+            version: '1.0.0',
+        },
+        servers: [
+            {
+                url: "http://localhost:3002/bite-and-go/v1",
+            },
+        ],
+    },
+    apis: [
+        './src/**/*.js',
+        './app.js'
+    ],
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
 // funcion para iniciar el servidor
 const initServer = async (app) => {
     // Crear la instancia de la aplicacion
@@ -60,6 +84,7 @@ const initServer = async (app) => {
         middlewares(app);
         routes(app);
 
+        app.use('/bite-and-go/v1/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs));
 
         app.listen(PORT, () => {
             console.log(`Servidor iniciado en el puerto ${PORT}`);
