@@ -7,7 +7,7 @@ export const hasRole = (...roles) => {
         if (!roles.includes(req.user.rol)) {
             return res.status(403).json({
                 success: false,
-                message: `Acceso denegado. Se requiere uno de estos roles: ${roles}`
+                message: `Acceso denegado. Se requiere uno de estos roles: ${roles.join(", ")}`
             });
         }
         next();
