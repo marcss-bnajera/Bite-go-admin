@@ -3,7 +3,8 @@ import {
     getUsers,
     register,
     updateUser,
-    deleteUser
+    deleteUser,
+    activateUser
 } from "./users-controller.js";
 
 const router = Router();
@@ -15,5 +16,7 @@ router.post('/register', register);
 router.put('/:id', updateUser);
 
 router.delete('/:id', deleteUser);
+
+router.patch('/:id/activate', activateUser);
 
 export default router;

@@ -6,14 +6,15 @@ import bcrypt from "bcryptjs";
  */
 export const getUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
-        const query = { activo: true }; // Solo traemos usuarios no "eliminados"
+        const { page = 1, limit = 10, activo } = req.query;
+        const query = activo !== undefined ? { activo: activo === 'true' } : {};
 
         const [users, total] = await Promise.all([
             User.find(query)
                 .skip((page - 1) * limit)
                 .limit(parseInt(limit))
-                .sort({ createdAt: -1 }),
+                .sort({ createdAt: -1 })
+                .populate('id_restaurante', 'nombre'),
             User.countDocuments(query)
         ]);
 
@@ -120,6 +121,30 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar",
+            error: error.message
+        });
+    }
+};
+
+export const activateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByIdAndUpdate(id, { activo: true }, { new: true });
+
+        if (!user) return res.status(404).json({
+            success: false,
+            message: "Usuario no encontrado"
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Usuario activado correctamente",
+            user
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al activar",
             error: error.message
         });
     }
