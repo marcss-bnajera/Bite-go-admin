@@ -23,6 +23,6 @@ router.post("/:id", validateEventoBody, addEvento);
 router.put("/:restId/:eventoId", validateEventUpdateDelete, updateEvento);
 
 // DELETE 
-router.delete("/:restId/:eventoId", deleteEvento);
+router.delete("/:restId/:eventoId", validateEventUpdateDelete, deleteEvento);
 
 export default router;

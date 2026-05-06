@@ -62,34 +62,54 @@ export const updateEvento = async (req, res) => {
     try {
         const { restId, eventoId } = req.params;
         const data = req.body;
+        const nuevoRestId = data.id_restaurante; // El nuevo restaurante seleccionado
 
-        const restaurant = await Restaurant.findOneAndUpdate(
-            // _id: restId es el ID del restaurante obtenido de la URL
-            // "eventos._id": eventoId es el ID del evento obtenido de la URL
-            { _id: restId, "eventos._id": eventoId },
-            //$set actualiza el valor del campo
-            // ...data mantiene el resto de los datos
-            // _id: eventoId mantiene el ID original
-            { $set: { "eventos.$": { ...data, _id: eventoId } } },
-            { new: true }
-        );
+        const restauranteOrigen = await Restaurant.findById(restId);
+        if (!restauranteOrigen) return res.status(404).json({ success: false, message: "Restaurante origen no encontrado" });
 
-        if (!restaurant) return res.status(404).json({
-            success: false,
-            message: "No se encontró el restaurante o el evento"
-        });
+        const evento = restauranteOrigen.eventos.id(eventoId);
+        if (!evento) return res.status(404).json({ success: false, message: "Evento no encontrado" });
+
+        // Si cambió de restaurante
+        if (nuevoRestId && nuevoRestId !== restId) {
+            // Eliminar del restaurante original
+            restauranteOrigen.eventos.pull(eventoId);
+            await restauranteOrigen.save();
+
+            // Agregar al nuevo restaurante
+            const restauranteDestino = await Restaurant.findById(nuevoRestId);
+            if (!restauranteDestino) return res.status(404).json({ success: false, message: "Restaurante destino no encontrado" });
+
+            restauranteDestino.eventos.push({
+                nombre: data.nombre,
+                descripcion: data.descripcion,
+                fechas: data.fechas,
+                servicios: data.servicios,
+            });
+            await restauranteDestino.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Evento movido y actualizado",
+                restaurant: restauranteDestino
+            });
+        }
+
+        // Si NO cambió de restaurante, solo actualiza
+        evento.nombre = data.nombre;
+        evento.descripcion = data.descripcion;
+        evento.fechas = data.fechas;
+        evento.servicios = data.servicios;
+        await restauranteOrigen.save();
 
         res.status(200).json({
             success: true,
             message: "Evento actualizado",
-            restaurant
+            restaurant: restauranteOrigen
         });
+
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error al actualizar evento",
-            error: error.message
-        });
+        res.status(500).json({ success: false, message: "Error al actualizar evento", error: error.message });
     }
 };
 
