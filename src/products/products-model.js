@@ -1,6 +1,5 @@
 import { Schema, model } from 'mongoose';
 
-// Esquema para la receta (ya lo tenías, se queda igual)
 const recetaSchema = new Schema({
     nombre_insumo: {
         type: String,
@@ -14,28 +13,12 @@ const recetaSchema = new Schema({
     }
 }, { _id: true });
 
-
 const variacionSchema = new Schema({
-    nombre: {
-        type: String,
-        required: true
-    },
-    precio_adicional: {
-        type: Number,
-        default: 0
-    },
-    afecta_inventario: {
-        type: Boolean,
-        default: false
-    },
-    insumo_relacionado: {
-        type: String,
-        trim: true
-    },
-    cantidad_insumo: {
-        type: Number,
-        default: 0
-    }
+    nombre: { type: String, required: true },
+    precio_adicional: { type: Number, default: 0 },
+    afecta_inventario: { type: Boolean, default: false },
+    insumo_relacionado: { type: String, trim: true },
+    cantidad_insumo: { type: Number, default: 0 }
 }, { _id: true });
 
 const productSchema = new Schema({
@@ -51,10 +34,9 @@ const productSchema = new Schema({
     },
     descripcion: { type: String, trim: true },
     categoria: {
-        type: String,
-        required: [true, 'La categoría es obligatoria'],
-        enum: ['Entradas', 'Platos', 'Bebidas', 'Postres', 'Otros'],
-        default: 'Platos'
+        type: Schema.Types.ObjectId,
+        ref: 'Category',
+        required: [true, 'La categoría es obligatoria']
     },
     precio: {
         type: Number,
@@ -64,9 +46,7 @@ const productSchema = new Schema({
     disponibilidad: { type: Boolean, default: true },
     foto_url: { type: [String], default: [] },
     receta: [recetaSchema],
-
     variaciones: [variacionSchema],
-
     activo: { type: Boolean, default: true }
 }, {
     timestamps: true,
