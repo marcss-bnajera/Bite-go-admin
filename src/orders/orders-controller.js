@@ -13,7 +13,11 @@ export const getOrders = async (req, res) => {
             Order.find(query)
                 .skip((page - 1) * limit)
                 .limit(parseInt(limit))
-                .sort({ createdAt: -1 }),
+                .sort({ createdAt: -1 })
+                .populate('id_usuario_cliente', 'nombre')
+                .populate('id_restaurante', 'nombre')
+                .populate('id_mesero_asignado', 'nombre')
+                .populate('id_repartidor_asignado', 'nombre'),
             Order.countDocuments(query)
         ]);
 
