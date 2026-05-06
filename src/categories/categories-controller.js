@@ -5,9 +5,9 @@ import Category from "./categories-model.js";
  */
 export const getCategories = async (req, res) => {
     try {
-        const { page = 1, limit = 10, restaurante } = req.query;
-        const query = { activo: true };
-
+        const { page = 1, limit = 10, restaurante, activo } = req.query;
+        const query = {};
+        if (activo !== undefined) query.activo = activo === 'true';
         if (restaurante) query.id_restaurante = restaurante;
 
         const [categories, total] = await Promise.all([
@@ -34,7 +34,6 @@ export const getCategories = async (req, res) => {
         });
     }
 };
-
 /**
  * POST - Crear nueva categoría
  */
@@ -113,6 +112,30 @@ export const deleteCategory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar la categoría",
+            error: error.message
+        });
+    }
+};
+
+export const activateCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const category = await Category.findByIdAndUpdate(id, { activo: true }, { new: true });
+
+        if (!category) return res.status(404).json({
+            success: false,
+            message: "Categoría no encontrada"
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Categoría activada correctamente",
+            category
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error al activar la categoría",
             error: error.message
         });
     }
