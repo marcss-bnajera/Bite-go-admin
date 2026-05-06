@@ -8,15 +8,14 @@ import {
 } from "./restaurants-controller.js";
 import {
     validateRestaurantId,
-    validateCreateRestaurant,
-    validateEventUpdateDelete
+    validateCreateRestaurant
 } from "../../middlewares/restaurants-validator.js";
 
 const router = Router();
 
 router.get("/", getRestaurants);
 router.post("/", validateCreateRestaurant, createRestaurant);
-router.put("/:id", validateEventUpdateDelete, updateRestaurant);
+router.put("/:id", validateRestaurantId, updateRestaurant);
 router.delete("/:id", validateRestaurantId, deleteRestaurant);
 
 router.post("/:id/add-table", addTable);
