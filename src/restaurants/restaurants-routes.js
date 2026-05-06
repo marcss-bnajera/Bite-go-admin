@@ -4,18 +4,18 @@ import {
     createRestaurant,
     updateRestaurant,
     deleteRestaurant,
-    addTable
+    addTable,
 } from "./restaurants-controller.js";
 import {
     validateRestaurantId,
-    validateEventoBody,
+    validateCreateRestaurant,
     validateEventUpdateDelete
 } from "../../middlewares/restaurants-validator.js";
 
 const router = Router();
 
 router.get("/", getRestaurants);
-router.post("/", validateEventoBody, createRestaurant);
+router.post("/", validateCreateRestaurant, createRestaurant);
 router.put("/:id", validateEventUpdateDelete, updateRestaurant);
 router.delete("/:id", validateRestaurantId, deleteRestaurant);
 
