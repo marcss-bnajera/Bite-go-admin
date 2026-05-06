@@ -49,3 +49,26 @@ export const validateEventUpdateDelete = [
         .withMessage('ID de evento no válido'),
     checkValidators
 ];
+
+export const validateCreateRestaurant = [
+    body('nombre')
+        .trim()
+        .notEmpty()
+        .withMessage('El nombre es obligatorio'),
+    body('direccion.texto')
+        .trim()
+        .notEmpty()
+        .withMessage('La dirección es obligatoria'),
+    body('horarios_atencion')
+        .trim()
+        .notEmpty()
+        .withMessage('El horario es obligatorio'),
+    body('categoria_gastronomica')
+        .trim()
+        .notEmpty()
+        .withMessage('La categoría gastronómica es obligatoria'),
+    body('precio_promedio')
+        .isNumeric()
+        .withMessage('El precio promedio debe ser un número'),
+    checkValidators
+];
