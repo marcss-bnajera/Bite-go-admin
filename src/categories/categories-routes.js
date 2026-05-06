@@ -5,7 +5,8 @@ import {
     getCategories,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    activateCategory
 } from "./categories-controller.js";
 import {
     validateCreateCategory,
@@ -25,5 +26,7 @@ router.put('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma')
 
 // Eliminar (desactivar) categoría por ID
 router.delete('/:id', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), deleteCategory);
+
+router.patch('/:id/activate', validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), activateCategory);
 
 export default router;
