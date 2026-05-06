@@ -4,6 +4,8 @@ export const hasRole = (...roles) => {
             return res.status(500).json({ success: false, message: "Se debe validar el token antes que el rol" });
         }
 
+        if (req.user.rol === 'SuperAdmin') return next();
+
         if (!roles.includes(req.user.rol)) {
             return res.status(403).json({
                 success: false,
