@@ -35,7 +35,7 @@ const userSchema = new Schema({
     rol: {
         type: String,
         required: true,
-        enum: ['Admin_Plataforma', 'Admin_Restaurante', 'Mesero', 'Repartidor', 'Cocinero', 'Cliente'],
+        enum: ['SuperAdmin', 'Admin_Restaurante', 'Mesero', 'Repartidor', 'Cocinero', 'Cliente'],
         default: 'Cliente'
     },
     id_restaurante: {
