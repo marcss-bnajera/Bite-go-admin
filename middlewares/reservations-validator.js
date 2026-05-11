@@ -21,9 +21,8 @@ export const validateCreateReservation = [
         .notEmpty().withMessage('La fecha y hora son obligatorias')
         .isISO8601().withMessage('Formato de fecha no válido (debe ser ISO8601)')
         .custom((value) => {
-            const date = new Date(value);
-            if (date < new Date()) {
-                throw new Error('La fecha de reserva no puede ser en el pasado');
+            if (new Date(value) < new Date()) {
+                throw new Error('No puedes reprogramar una reserva para una fecha pasada');
             }
             return true;
         }),

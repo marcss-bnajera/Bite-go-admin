@@ -3,8 +3,9 @@ import { cloudinary } from "../../middlewares/file-uploader.js";
 
 export const getProducts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search } = req.query;
-        const query = { activo: true };
+        const { page = 1, limit = 10, search, activo } = req.query;
+        const query = {};
+        if (activo !== undefined) query.activo = activo === 'true';
         if (search) query.nombre = { $regex: search, $options: "i" };
 
         const [products, total] = await Promise.all([
@@ -81,9 +82,8 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { receta, activo, id_restaurante, ...data } = req.body;
+        const { receta, id_restaurante, ...data } = req.body;
 
-        // Si se sube nueva imagen, eliminar la anterior de Cloudinary
         if (req.file) {
             const currentProduct = await Product.findById(id);
             if (currentProduct?.foto_url?.length > 0) {

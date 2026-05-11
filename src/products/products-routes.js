@@ -22,8 +22,8 @@ router.get('/restaurant/:id_restaurante', getProductsByRestaurant);
 router.post(
     '/',
     uploadProductImage.single('foto'),
-    cleanupUploadedFileOnFinish,
     createProductValidator,
+    cleanupUploadedFileOnFinish,
     createProduct
 );
 
@@ -31,6 +31,7 @@ router.put(
     '/:id',
     uploadProductImage.single('foto'),
     updateProductValidator,
+    cleanupUploadedFileOnFinish,
     updateProduct
 );
 

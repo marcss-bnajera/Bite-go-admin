@@ -7,7 +7,7 @@ export const getRestaurants = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
         const { activo } = req.query;
-        const query = activo !== undefined ? { activo: activo === 'true' } : { activo: true };
+        const query = activo !== undefined ? { activo: activo === 'true' } : {};
 
         const [restaurants, total] = await Promise.all([
             Restaurant.find(query)
