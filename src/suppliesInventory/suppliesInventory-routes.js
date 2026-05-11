@@ -3,8 +3,10 @@ import {
     createInsumo,
     getInventoryByRestaurant,
     adjustStock,
+    updateInsumo,
     deleteInsumo,
-    getLowStockAlerts
+    getLowStockAlerts,
+    activateInsumo
 } from "./suppliesInventory-controller.js";
 import {
     createInsumoValidator,
@@ -25,7 +27,11 @@ router.post("/", createInsumoValidator, createInsumo);
 // Ajustar stock con validación de ID y cantidad numérica
 router.put("/adjust/:id", adjustStockValidator, adjustStock);
 
+// Editar stock_minimo y stock_actual directo
+router.put("/:id", updateInsumo);
+
 // Desactivar insumo con validación de ID
 router.delete("/:id", deleteInsumoValidator, deleteInsumo);
+router.patch("/:id/activate", activateInsumo);
 
 export default router;
