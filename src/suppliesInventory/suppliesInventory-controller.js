@@ -30,7 +30,10 @@ export const createInsumo = async (req, res) => {
 export const getInventoryByRestaurant = async (req, res) => {
     try {
         const { id_restaurante } = req.params;
-        const inventory = await SuppliesInventory.find({ id_restaurante, activo: true });
+        const { activo } = req.query;
+        const query = { id_restaurante };
+        if (activo !== undefined) query.activo = activo === 'true'; else query.activo = true;
+        const inventory = await SuppliesInventory.find(query);
 
         res.status(200).json({
             success: true,
@@ -90,6 +93,30 @@ export const adjustStock = async (req, res) => {
             message: "Stock actualizado correctamente",
             insumo
         });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+/**
+ * PUT - Editar stock_minimo (y opcionalmente stock_actual) directo
+ */
+export const updateInsumo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { stock_actual, stock_minimo } = req.body;
+
+        const insumo = await SuppliesInventory.findByIdAndUpdate(
+            id,
+            { stock_actual, stock_minimo },
+            { new: true, runValidators: true }
+        );
+
+        if (!insumo) {
+            return res.status(404).json({ success: false, message: "Insumo no encontrado" });
+        }
+
+        res.status(200).json({ success: true, message: "Insumo actualizado", insumo });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -162,5 +189,15 @@ export const reduceStockFromOrder = async (items, id_restaurante) => {
     } catch (error) {
         console.error("Error actualizando stock:", error.message);
         throw new Error("Error en actualización automática de stock");
+    }
+};
+export const activateInsumo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const insumo = await SuppliesInventory.findByIdAndUpdate(id, { activo: true }, { new: true });
+        if (!insumo) return res.status(404).json({ success: false, message: "Insumo no encontrado" });
+        res.status(200).json({ success: true, message: "Insumo reactivado correctamente", insumo });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 };
