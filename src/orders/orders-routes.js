@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import {
     getOrders,
@@ -7,7 +6,8 @@ import {
     getOrdersByRestaurant,
     createOrder,
     updateOrder,
-    deleteOrder
+    deleteOrder,
+    activateOrder
 } from './orders-controller.js';
 import {
     validateCreateOrder,
@@ -23,5 +23,6 @@ router.get('/restaurant/:id_restaurante', getOrdersByRestaurant);
 router.post('/', validateCreateOrder, createOrder);
 router.put('/:id', validateUpdateOrder, updateOrder);
 router.delete('/:id', deleteOrder);
+router.patch('/:id/activate', activateOrder);
 
 export default router;
