@@ -1,4 +1,3 @@
-
 import Order from "./orders-model.js";
 
 /**
@@ -6,8 +5,8 @@ import Order from "./orders-model.js";
  */
 export const getOrders = async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
-        const query = { activo: true };
+        const { page = 1, limit = 10, activo } = req.query;
+        const query = activo !== undefined ? { activo: activo === 'true' } : { activo: true };
 
         const [orders, total] = await Promise.all([
             Order.find(query)
@@ -185,7 +184,7 @@ export const deleteOrder = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.findByIdAndDelete(id);
+        const order = await Order.findByIdAndUpdate(id, { activo: false }, { new: true });
 
         if (!order) {
             return res.status(404).json({
@@ -196,8 +195,7 @@ export const deleteOrder = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Pedido eliminado",
-            order
+            message: "Pedido desactivado correctamente"
         });
     } catch (error) {
         res.status(500).json({
@@ -205,5 +203,15 @@ export const deleteOrder = async (req, res) => {
             message: "Error al eliminar pedido",
             error: error.message
         });
+    }
+};
+export const activateOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findByIdAndUpdate(id, { activo: true }, { new: true });
+        if (!order) return res.status(404).json({ success: false, message: "Pedido no encontrado" });
+        res.status(200).json({ success: true, message: "Pedido reactivado correctamente" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error al reactivar", error: error.message });
     }
 };
