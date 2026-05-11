@@ -122,3 +122,13 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ success: false, message: "Error al eliminar", error: error.message });
     }
 };
+export const activateProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findByIdAndUpdate(id, { activo: true }, { new: true });
+        if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
+        res.status(200).json({ success: true, message: "Producto reactivado exitosamente" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error al reactivar", error: error.message });
+    }
+};
