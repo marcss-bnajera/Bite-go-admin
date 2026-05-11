@@ -5,6 +5,7 @@ import {
     updateRestaurant,
     deleteRestaurant,
     addTable,
+    activateRestaurant,
 } from "./restaurants-controller.js";
 import {
     validateRestaurantId,
@@ -17,6 +18,7 @@ router.get("/", getRestaurants);
 router.post("/", validateCreateRestaurant, createRestaurant);
 router.put("/:id", validateRestaurantId, updateRestaurant);
 router.delete("/:id", validateRestaurantId, deleteRestaurant);
+router.patch("/:id/activate", validateRestaurantId, activateRestaurant);
 
 router.post("/:id/add-table", addTable);
 

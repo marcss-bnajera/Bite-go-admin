@@ -6,7 +6,8 @@ import Restaurant from "./restaurants-model.js";
 export const getRestaurants = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
-        const query = { activo: true };
+        const { activo } = req.query;
+        const query = activo !== undefined ? { activo: activo === 'true' } : { activo: true };
 
         const [restaurants, total] = await Promise.all([
             Restaurant.find(query)
@@ -104,6 +105,16 @@ export const deleteRestaurant = async (req, res) => {
         if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
 
         res.status(200).json({ success: true, message: "Desactivado correctamente" });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+export const activateRestaurant = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const restaurant = await Restaurant.findByIdAndUpdate(id, { activo: true }, { new: true });
+        if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
+        res.status(200).json({ success: true, message: "Restaurante reactivado correctamente" });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
