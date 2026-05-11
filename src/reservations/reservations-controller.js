@@ -5,7 +5,7 @@ import Reservation from "./reservations-model.js";
 export const getReservations = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
-        const query = { active: true };
+        const query = {};
 
         const [reservations, total] = await Promise.all([
             Reservation.find(query)
