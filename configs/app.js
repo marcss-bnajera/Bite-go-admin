@@ -18,12 +18,13 @@ import recipesRoutes from "../src/recipes/recipes-routes.js";
 import suppliesInventoryRoutes from "../src/suppliesInventory/suppliesInventory-routes.js";
 import reservationsRoutes from "../src/reservations/reservations-routes.js";
 import categoriesRoutes from "../src/categories/categories-routes.js";
+import { validateJWT } from "../middlewares/validate-jwt.js";
+import { errorHandler } from '../middlewares/handle-erros.js';
 
 const BASE_URL = '/bite-and-go/v1';
 
 // Rutas
 import { dbConnection } from './db.js';
-import { version } from "mongoose";
 
 const middlewares = (app) => {
     app.use(helmet(helmetConfiguration));
@@ -36,6 +37,8 @@ const middlewares = (app) => {
 
 //Integracion de todas las rutas
 const routes = (app) => {
+    app.use(`${BASE_URL}`, validateJWT);
+
     app.use(`${BASE_URL}/users`, usersRoutes);
     app.use(`${BASE_URL}/restaurants`, restaurantsRoutes);
     app.use(`${BASE_URL}/reservations`, reservationsRoutes);
@@ -47,6 +50,7 @@ const routes = (app) => {
     app.use(`${BASE_URL}/orders`, ordersRoutes);
     app.use(`${BASE_URL}/items`, itemsRoutes);
     app.use(`${BASE_URL}/recipes`, recipesRoutes);
+    app.use(errorHandler);
 }
 
 // funcion para iniciar el servidor

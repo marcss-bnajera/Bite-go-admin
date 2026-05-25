@@ -7,12 +7,14 @@ import bcrypt from "bcryptjs";
 export const getUsers = async (req, res) => {
     try {
         const { page = 1, limit = 10, activo } = req.query;
+        const safePage = Math.max(1, parseInt(page) || 1);
+        const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = activo !== undefined ? { activo: activo === 'true' } : {};
 
         const [users, total] = await Promise.all([
             User.find(query)
-                .skip((page - 1) * limit)
-                .limit(parseInt(limit))
+                .skip((safePage - 1) * safeLimit)
+                .limit(safeLimit)
                 .sort({ createdAt: -1 })
                 .populate('id_restaurante', 'nombre'),
             User.countDocuments(query)
@@ -21,8 +23,8 @@ export const getUsers = async (req, res) => {
         res.status(200).json({
             success: true,
             total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / safeLimit),
+            currentPage: safePage,
             users
         });
     } catch (error) {
@@ -71,7 +73,11 @@ export const register = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { password, email, ...data } = req.body;
+        const { password, email, rol, ...rest } = req.body;
+
+        const { nombre, telefono, direccion, dpi, id_restaurante, activo } = rest;
+        const data = { nombre, telefono, direccion, dpi, id_restaurante, activo };
+        Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
         if (password) {
             const salt = bcrypt.genSaltSync(10);

@@ -23,7 +23,18 @@ const MIMETYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+const sanitizeFolder = (folder) => {
+    return folder
+        .replace(/&/g, 'and')
+        .replace(/[<>"']/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-zA-Z0-9_\-\/]/g, '')
+        .replace(/\/+/g, '/')
+        .replace(/^\/|\/$/g, '');
+};
+
 const createCloudinaryUploader = (folder) => {
+    const safeFolder = sanitizeFolder(folder);
     const storage = new CloudinaryStorage({
         cloudinary: cloudinary,
         params: (req, file) => {
@@ -40,7 +51,7 @@ const createCloudinaryUploader = (folder) => {
             const publicId = `${safeBase}-${shortUuid}`;
 
             return {
-                folder: folder,
+                folder: safeFolder,
                 public_id: publicId, // no incluir extensión; Cloudinary la calcula
                 allowed_formats: ['jpeg', 'jpg', 'png', 'webp', 'avif'],
                 transformation: [{ width: 1000, height: 1000, crop: 'limit' }],

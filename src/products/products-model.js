@@ -1,15 +1,15 @@
 import { Schema, model } from 'mongoose';
 
 const recetaSchema = new Schema({
-    nombre_insumo: {
-        type: String,
-        required: [true, 'El nombre del insumo es obligatorio'],
-        trim: true
+    id_insumo: {
+        type: Schema.Types.ObjectId,
+        ref: 'SuppliesInventory',
+        required: [true, 'El insumo es obligatorio']
     },
     cantidad_requerida: {
         type: Number,
         required: [true, 'La cantidad es obligatoria'],
-        min: [0, 'La cantidad no puede ser negativa']
+        min: [0.01, 'La cantidad debe ser mayor a 0']
     }
 }, { _id: true });
 
@@ -47,7 +47,11 @@ const productSchema = new Schema({
     foto_url: { type: [String], default: [] },
     receta: [recetaSchema],
     variaciones: [variacionSchema],
-    activo: { type: Boolean, default: true }
+    activo: { type: Boolean, default: true },
+    foto_public_id: {
+        type: String,
+        default: null
+    },
 }, {
     timestamps: true,
     toJSON: {

@@ -19,10 +19,12 @@ export const validateCreateReservation = [
 
     body('reservationDate')
         .notEmpty().withMessage('La fecha y hora son obligatorias')
-        .isISO8601().withMessage('Formato de fecha no válido (debe ser ISO8601)')
+        .isISO8601({ strict: true }).withMessage('Formato de fecha no válido (debe ser ISO8601 con zona horaria)')
         .custom((value) => {
-            if (new Date(value) < new Date()) {
-                throw new Error('No puedes reprogramar una reserva para una fecha pasada');
+            const reserva = new Date(value);
+            const ahora = new Date();
+            if (reserva <= ahora) {
+                throw new Error("La fecha de la reserva debe ser futura");
             }
             return true;
         }),
@@ -45,9 +47,9 @@ export const validateUpdateReservation = [
 
     body('reservationDate')
         .optional()
-        .isISO8601()
+        .isISO8601({ strict: true }).withMessage('Formato de fecha no válido (debe ser ISO8601 con zona horaria)')
         .custom((value) => {
-            if (new Date(value) < new Date()) {
+            if (new Date(value) <= new Date()) {
                 throw new Error('No puedes reprogramar una reserva para una fecha pasada');
             }
             return true;

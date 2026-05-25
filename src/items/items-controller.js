@@ -1,5 +1,5 @@
 import Order from "../orders/orders-model.js";
-import { reduceStockFromOrder } from "../suppliesInventory/suppliesInventory-controller.js";
+import { reduceStockFromOrder, adjustStockFromItemUpdate } from "../suppliesInventory/suppliesInventory-controller.js";
 
 /**
  * GET - Obtener items de un pedido
@@ -53,7 +53,7 @@ export const getVariationsSummary = async (req, res) => {
 };
 
 /**
- * POST - Agregar Item a un pedido (Incluyendo Variaciones/Extras)
+ * POST - Agregar Item a un pedido
  */
 export const addItem = async (req, res) => {
     try {
@@ -97,7 +97,7 @@ export const addItem = async (req, res) => {
 };
 
 /**
- * PUT - Actualizar cantidad o notas de un item y recalcular el TOTAL
+ * PUT - Actualizar cantidad o notas de un item
  */
 export const updateItem = async (req, res) => {
     try {
@@ -106,13 +106,26 @@ export const updateItem = async (req, res) => {
 
         const orderBefore = await Order.findOne(
             { _id: orderId, "items._id": itemId },
-            { "items.$": 1, total: 1 }
+            { "items.$": 1, total: 1, id_restaurante: 1 }
         );
 
-        if (!orderBefore) return res.status(404).json({ message: "Pedido o Item no encontrado" });
+        if (!orderBefore) return res.status(404).json({ success: false, message: "Pedido o Item no encontrado" });
 
         const itemOriginal = orderBefore.items[0];
         const diferenciaCantidad = cantidad - itemOriginal.cantidad;
+
+        try {
+            await adjustStockFromItemUpdate(
+                { id_producto: itemOriginal.id_producto },
+                orderBefore.id_restaurante,
+                diferenciaCantidad
+            );
+        } catch (stockError) {
+            return res.status(400).json({
+                success: false,
+                message: stockError.message
+            });
+        }
 
         let precioExtra = 0;
         if (itemOriginal.variaciones_elegidas && Array.isArray(itemOriginal.variaciones_elegidas)) {
@@ -137,7 +150,9 @@ export const updateItem = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Item actualizado y total recalculado",
+            message: diferenciaCantidad === 0
+                ? "Notas del item actualizadas"
+                : `Item actualizado, total e inventario ajustados`,
             total: orderUpdated.total,
             order: orderUpdated
         });
@@ -147,18 +162,32 @@ export const updateItem = async (req, res) => {
 };
 
 /**
- * DELETE - Eliminar Item y restar del TOTAL
+ * DELETE - Eliminar Item
  */
 export const deleteItem = async (req, res) => {
     try {
         const { orderId, itemId } = req.params;
 
-        const orderInfo = await Order.findOne({ _id: orderId, "items._id": itemId }, { "items.$": 1 });
+        const orderInfo = await Order.findOne(
+            { _id: orderId, "items._id": itemId },
+            { "items.$": 1, id_restaurante: 1 }
+        );
 
         if (!orderInfo) return res.status(404).json({ success: false, message: "Item no encontrado" });
 
         const itemARemover = orderInfo.items[0];
 
+        try {
+            await adjustStockFromItemUpdate(
+                { id_producto: itemARemover.id_producto },
+                orderInfo.id_restaurante,
+                -itemARemover.cantidad
+            );
+        } catch (stockError) {
+            console.error("Advertencia: item eliminado pero stock no pudo devolverse:", stockError.message);
+        }
+
+        // Calcular monto a restar del total
         let precioExtra = 0;
         if (itemARemover.variaciones_elegidas && Array.isArray(itemARemover.variaciones_elegidas)) {
             precioExtra = itemARemover.variaciones_elegidas.reduce((acc, vario) => {
@@ -177,7 +206,11 @@ export const deleteItem = async (req, res) => {
             { new: true }
         );
 
-        res.status(200).json({ success: true, message: "Item eliminado", total: order.total });
+        res.status(200).json({
+            success: true,
+            message: "Item eliminado e ingredientes devueltos al inventario",
+            total: order.total
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

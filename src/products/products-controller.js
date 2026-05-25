@@ -4,21 +4,32 @@ import { cloudinary } from "../../middlewares/file-uploader.js";
 export const getProducts = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, activo } = req.query;
+        const safePage = Math.max(1, parseInt(page) || 1);
+        const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = {};
         if (activo !== undefined) query.activo = activo === 'true';
-        if (search) query.nombre = { $regex: search, $options: "i" };
+        if (search) {
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            query.nombre = { $regex: escaped, $options: "i" };
+        }
 
         const [products, total] = await Promise.all([
             Product.find(query)
-                .skip((page - 1) * limit)
-                .limit(parseInt(limit))
+                .skip((safePage - 1) * safeLimit)
+                .limit(safeLimit)
                 .sort({ createdAt: -1 })
                 .populate('id_restaurante', 'nombre categoria_gastronomica')
                 .populate('categoria', 'nombre'),
             Product.countDocuments(query)
         ]);
 
-        res.status(200).json({ success: true, total, totalPages: Math.ceil(total / limit), currentPage: parseInt(page), products });
+        res.status(200).json({
+            success: true,
+            total,
+            totalPages: Math.ceil(total / safeLimit),
+            currentPage: safePage,
+            products
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: "Error al obtener productos", error: error.message });
     }
@@ -28,18 +39,26 @@ export const getProductsByRestaurant = async (req, res) => {
     try {
         const { id_restaurante } = req.params;
         const { page = 1, limit = 10 } = req.query;
+        const safePage = Math.max(1, parseInt(page) || 1);
+        const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = { id_restaurante, activo: true };
 
         const [products, total] = await Promise.all([
             Product.find(query)
-                .skip((page - 1) * limit)
-                .limit(parseInt(limit))
+                .skip((safePage - 1) * safeLimit)
+                .limit(safeLimit)
                 .sort({ createdAt: -1 })
                 .populate('categoria', 'nombre'),
             Product.countDocuments(query)
         ]);
 
-        res.status(200).json({ success: true, total, totalPages: Math.ceil(total / limit), currentPage: parseInt(page), products });
+        res.status(200).json({
+            success: true,
+            total,
+            totalPages: Math.ceil(total / safeLimit),
+            currentPage: safePage,
+            products
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: "Error al obtener productos", error: error.message });
     }
@@ -63,11 +82,12 @@ export const createProduct = async (req, res) => {
     try {
         const productData = { ...req.body };
 
-        // Una sola imagen opcional
         if (req.file) {
             productData.foto_url = [req.file.path];
+            productData.foto_public_id = req.file.filename;
         } else {
             productData.foto_url = [];
+            productData.foto_public_id = null;
         }
 
         const product = new Product(productData);
@@ -86,20 +106,15 @@ export const updateProduct = async (req, res) => {
 
         if (req.file) {
             const currentProduct = await Product.findById(id);
-            if (currentProduct?.foto_url?.length > 0) {
+            if (currentProduct?.foto_public_id) {
                 try {
-                    const url = currentProduct.foto_url[0];
-                    const parts = url.split('/');
-                    const filenameWithExt = parts[parts.length - 1];
-                    const filename = filenameWithExt.split('.')[0];
-                    const folder = parts[parts.length - 2];
-                    const publicId = `${folder}/${filename}`;
-                    await cloudinary.uploader.destroy(publicId);
+                    await cloudinary.uploader.destroy(currentProduct.foto_public_id);
                 } catch (deleteError) {
                     console.error(`Error al eliminar imagen anterior: ${deleteError.message}`);
                 }
             }
             data.foto_url = [req.file.path];
+            data.foto_public_id = req.file.filename;
         }
 
         const product = await Product.findByIdAndUpdate(id, data, { new: true, runValidators: true })

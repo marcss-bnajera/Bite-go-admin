@@ -46,6 +46,12 @@ const userSchema = new Schema({
     activo: {
         type: Boolean,
         default: true
+    },
+    auth_id: {
+        type: String,
+        unique: true,
+        sparse: true,  // permite null sin romper el unique
+        default: null
     }
 }, {
     timestamps: true,

@@ -34,7 +34,7 @@ const itemPedidoSchema = new Schema({
 });
 
 /**
- * PEDIDO 
+ * PEDIDO
  */
 const orderSchema = new Schema({
     id_usuario_cliente: {
@@ -58,6 +58,13 @@ const orderSchema = new Schema({
         default: null
     },
     items: [itemPedidoSchema],
+
+    // Notas generales del pedido (distintas a las notas por item)
+    notas: {
+        type: String,
+        trim: true,
+        default: ""
+    },
 
     total: {
         type: Number,
