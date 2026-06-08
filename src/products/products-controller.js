@@ -13,6 +13,11 @@ export const getProducts = async (req, res) => {
             query.nombre = { $regex: escaped, $options: "i" };
         }
 
+        // Admin_Restaurante solo ve su propio restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            query.id_restaurante = req.user.id_restaurante;
+        }
+
         const [products, total] = await Promise.all([
             Product.find(query)
                 .skip((safePage - 1) * safeLimit)
@@ -82,6 +87,11 @@ export const createProduct = async (req, res) => {
     try {
         const productData = { ...req.body };
 
+        // Admin_Restaurante solo puede crear en su restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            productData.id_restaurante = req.user.id_restaurante;
+        }
+
         if (req.file) {
             productData.foto_url = [req.file.path];
             productData.foto_public_id = req.file.filename;
@@ -103,6 +113,16 @@ export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const { receta, id_restaurante, ...data } = req.body;
+
+        // Verificar que el producto pertenece al restaurante del Admin_Restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Product.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Producto no encontrado" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para editar productos de otro restaurante" });
+            }
+        }
 
         if (req.file) {
             const currentProduct = await Product.findById(id);
@@ -130,6 +150,17 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Verificar ownership antes de desactivar
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Product.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Producto no encontrado" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para eliminar productos de otro restaurante" });
+            }
+        }
+
         const product = await Product.findByIdAndUpdate(id, { activo: false }, { new: true });
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, message: "Producto dado de baja exitosamente" });
@@ -137,9 +168,21 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ success: false, message: "Error al eliminar", error: error.message });
     }
 };
+
 export const activateProduct = async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Verificar ownership antes de reactivar
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Product.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Producto no encontrado" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para reactivar productos de otro restaurante" });
+            }
+        }
+
         const product = await Product.findByIdAndUpdate(id, { activo: true }, { new: true });
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, message: "Producto reactivado exitosamente" });

@@ -6,6 +6,11 @@ import Product from "../products/products-model.js";
  */
 export const createInsumo = async (req, res) => {
     try {
+        // Admin_Restaurante solo puede crear insumos en su restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            req.body.id_restaurante = req.user.id_restaurante;
+        }
+
         const { id_restaurante, nombre_insumo, stock_actual, stock_minimo } = req.body;
         const existente = await SuppliesInventory.findOne({
             id_restaurante,

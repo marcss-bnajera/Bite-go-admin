@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validateJWT } from "../../middlewares/validate-jwt.js";
+import { hasRole } from "../../middlewares/validate-roles.js";
 import {
     createInsumo,
     getInventoryByRestaurant,
@@ -15,23 +17,24 @@ import {
 } from "../../middlewares/suppliesInventory-validators.js";
 
 const router = Router();
+const auth = [validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante')];
 
 // Listar inventario por restaurante (No requiere body, solo param)
-router.get("/restaurant/:id_restaurante", getInventoryByRestaurant);
+router.get("/restaurant/:id_restaurante", auth, getInventoryByRestaurant);
 
-router.get("/alerts/:id_restaurante", getLowStockAlerts);
+router.get("/alerts/:id_restaurante", auth, getLowStockAlerts);
 
 // Crear insumo con validaciones de campos obligatorios
-router.post("/", createInsumoValidator, createInsumo);
+router.post("/", auth, createInsumoValidator, createInsumo);
 
 // Ajustar stock con validación de ID y cantidad numérica
-router.put("/adjust/:id", adjustStockValidator, adjustStock);
+router.put("/adjust/:id", auth, adjustStockValidator, adjustStock);
 
 // Editar stock_minimo y stock_actual directo
-router.put("/:id", updateInsumo);
+router.put("/:id", auth, updateInsumo);
 
 // Desactivar insumo con validación de ID
-router.delete("/:id", deleteInsumoValidator, deleteInsumo);
-router.patch("/:id/activate", activateInsumo);
+router.delete("/:id", auth, deleteInsumoValidator, deleteInsumo);
+router.patch("/:id/activate", auth, activateInsumo);
 
 export default router;

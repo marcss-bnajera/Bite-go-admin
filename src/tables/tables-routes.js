@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validateJWT } from "../../middlewares/validate-jwt.js";
+import { hasRole, checkRestaurantOwnership } from "../../middlewares/validate-roles.js";
 import {
     addMesa,
     getMesas,
@@ -8,16 +10,16 @@ import {
 
 const router = Router();
 
-// GET 
-router.get("/:id", getMesas);
+// GET - Admin_Restaurante solo puede ver las mesas de su restaurante
+router.get("/:id", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership(), getMesas);
 
-// POST 
-router.post("/:id", addMesa);
+// POST - Solo puede agregar mesas a su restaurante
+router.post("/:id", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership(), addMesa);
 
-// PUT 
-router.put("/:restId/:mesaId", updateMesa);
+// PUT - restId debe ser su restaurante
+router.put("/:restId/:mesaId", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership('restId'), updateMesa);
 
-// DELETE 
-router.delete("/:restId/:mesaId", deleteMesa);
+// DELETE - restId debe ser su restaurante
+router.delete("/:restId/:mesaId", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership('restId'), deleteMesa);
 
 export default router;

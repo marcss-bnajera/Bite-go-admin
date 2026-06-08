@@ -8,7 +8,13 @@ export const getCategories = async (req, res) => {
         const { page = 1, limit = 10, restaurante, activo } = req.query;
         const query = {};
         if (activo !== undefined) query.activo = activo === 'true';
-        if (restaurante) query.id_restaurante = restaurante;
+
+        // Admin_Restaurante solo ve su propio restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            query.id_restaurante = req.user.id_restaurante;
+        } else if (restaurante) {
+            query.id_restaurante = restaurante;
+        }
 
         const [categories, total] = await Promise.all([
             Category.find(query)
@@ -34,6 +40,7 @@ export const getCategories = async (req, res) => {
         });
     }
 };
+
 /**
  * POST - Crear nueva categoría
  */
@@ -41,10 +48,12 @@ export const createCategory = async (req, res) => {
     try {
         const data = req.body;
 
-        const category = new Category({
-            ...data
-        });
+        // Admin_Restaurante solo puede crear en su restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            data.id_restaurante = req.user.id_restaurante;
+        }
 
+        const category = new Category({ ...data });
         await category.save();
 
         res.status(201).json({
@@ -68,6 +77,16 @@ export const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
         const data = req.body;
+
+        // Verificar ownership antes de actualizar
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Category.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Categoría no encontrada" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para editar categorías de otro restaurante" });
+            }
+        }
 
         const category = await Category.findByIdAndUpdate(id, data, { new: true });
 
@@ -97,6 +116,16 @@ export const deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Verificar ownership antes de desactivar
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Category.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Categoría no encontrada" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para eliminar categorías de otro restaurante" });
+            }
+        }
+
         const category = await Category.findByIdAndUpdate(id, { activo: false }, { new: true });
 
         if (!category) return res.status(404).json({
@@ -120,6 +149,17 @@ export const deleteCategory = async (req, res) => {
 export const activateCategory = async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Verificar ownership antes de activar
+        if (req.user.rol === 'Admin_Restaurante') {
+            const existing = await Category.findById(id).select('id_restaurante');
+            if (!existing) return res.status(404).json({ success: false, message: "Categoría no encontrada" });
+
+            if (existing.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para activar categorías de otro restaurante" });
+            }
+        }
+
         const category = await Category.findByIdAndUpdate(id, { activo: true }, { new: true });
 
         if (!category) return res.status(404).json({

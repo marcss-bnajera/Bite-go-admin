@@ -82,6 +82,14 @@ export const updateMesa = async (req, res) => {
         const data = req.body;
         const nuevoRestId = data.id_restaurante;
 
+        // Admin_Restaurante no puede mover una mesa a otro restaurante
+        if (req.user.rol === 'Admin_Restaurante' && nuevoRestId && nuevoRestId.toString() !== restId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permiso para mover mesas a otro restaurante"
+            });
+        }
+
         const restauranteOrigen = await Restaurant.findById(restId);
         if (!restauranteOrigen) return res.status(404).json({
             success: false,
@@ -94,7 +102,7 @@ export const updateMesa = async (req, res) => {
             message: "Mesa no encontrada"
         });
 
-        // Si cambió de restaurante
+        // Si cambió de restaurante (solo SuperAdmin llega aquí por la validación anterior)
         if (nuevoRestId && nuevoRestId !== restId) {
             restauranteOrigen.mesas.pull(mesaId);
             await restauranteOrigen.save();

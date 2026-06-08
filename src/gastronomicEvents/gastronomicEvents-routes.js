@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validateJWT } from "../../middlewares/validate-jwt.js";
+import { hasRole, checkRestaurantOwnership } from "../../middlewares/validate-roles.js";
 import {
     addEvento,
     getEventos,
@@ -13,16 +15,16 @@ import {
 
 const router = Router();
 
-// GET 
-router.get("/:id", validateRestaurantId, getEventos);
+// GET - SuperAdmin ve cualquier restaurante, Admin_Restaurante solo el suyo
+router.get("/:id", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership(), validateRestaurantId, getEventos);
 
-// POST 
-router.post("/:id", validateEventoBody, addEvento);
+// POST - Solo puede agregar eventos a su propio restaurante
+router.post("/:id", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership(), validateEventoBody, addEvento);
 
-// PUT 
-router.put("/:restId/:eventoId", validateEventUpdateDelete, updateEvento);
+// PUT - restId debe ser su restaurante
+router.put("/:restId/:eventoId", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership('restId'), validateEventUpdateDelete, updateEvento);
 
-// DELETE 
-router.delete("/:restId/:eventoId", validateEventUpdateDelete, deleteEvento);
+// DELETE - restId debe ser su restaurante
+router.delete("/:restId/:eventoId", validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership('restId'), validateEventUpdateDelete, deleteEvento);
 
 export default router;

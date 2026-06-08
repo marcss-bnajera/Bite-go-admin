@@ -64,13 +64,21 @@ export const updateEvento = async (req, res) => {
         const data = req.body;
         const nuevoRestId = data.id_restaurante; // El nuevo restaurante seleccionado
 
+        // Admin_Restaurante no puede mover un evento a otro restaurante
+        if (req.user.rol === 'Admin_Restaurante' && nuevoRestId && nuevoRestId.toString() !== restId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "No tienes permiso para mover eventos a otro restaurante"
+            });
+        }
+
         const restauranteOrigen = await Restaurant.findById(restId);
         if (!restauranteOrigen) return res.status(404).json({ success: false, message: "Restaurante origen no encontrado" });
 
         const evento = restauranteOrigen.eventos.id(eventoId);
         if (!evento) return res.status(404).json({ success: false, message: "Evento no encontrado" });
 
-        // Si cambió de restaurante
+        // Si cambió de restaurante (solo SuperAdmin llega aquí por la validación anterior)
         if (nuevoRestId && nuevoRestId !== restId) {
             // Eliminar del restaurante original
             restauranteOrigen.eventos.pull(eventoId);
