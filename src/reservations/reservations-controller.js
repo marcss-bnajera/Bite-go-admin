@@ -7,20 +7,20 @@ const RESERVATION_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 horas
 /**
  * Validar mesa y solapamiento de horario
  */
-const validateTableAndOverlap = async ({ restaurantId, tableId, reservationDate, peopleCount, excludeReservationId = null }) => {
-    const restaurant = await Restaurant.findById(restaurantId);
+const validateTableAndOverlap = async ({ id_restaurante, id_mesa, fecha_reserva, cantidad_personas, excludeReservationId = null }) => {
+    const restaurant = await Restaurant.findById(id_restaurante);
     if (!restaurant || !restaurant.activo) {
         throw new Error("El restaurante no existe o está inactivo");
     }
 
-    const mesa = restaurant.mesas.id(tableId);
+    const mesa = restaurant.mesas.id(id_mesa);
     if (!mesa) {
         throw new Error("La mesa seleccionada no existe en este restaurante");
     }
 
-    if (peopleCount > mesa.capacidad) {
+    if (cantidad_personas > mesa.capacidad) {
         throw new Error(
-            `La mesa #${mesa.numero} tiene capacidad para ${mesa.capacidad} persona(s), pero se solicitaron ${peopleCount}`
+            `La mesa #${mesa.numero} tiene capacidad para ${mesa.capacidad} persona(s), pero se solicitaron ${cantidad_personas}`
         );
     }
 
@@ -28,26 +28,25 @@ const validateTableAndOverlap = async ({ restaurantId, tableId, reservationDate,
         throw new Error(`La mesa #${mesa.numero} está en mantenimiento y no puede reservarse`);
     }
 
-    const fechaReserva = new Date(reservationDate);
-    const ventanaInicio = new Date(fechaReserva.getTime() - RESERVATION_WINDOW_MS);
-    const ventanaFin = new Date(fechaReserva.getTime() + RESERVATION_WINDOW_MS);
+    const fecha = new Date(fecha_reserva);
+    const ventanaInicio = new Date(fecha.getTime() - RESERVATION_WINDOW_MS);
+    const ventanaFin = new Date(fecha.getTime() + RESERVATION_WINDOW_MS);
 
     const query = {
-        restaurantId,
-        tableId,
-        active: true,
-        status: { $in: ["Confirmed", "Attended"] },
-        reservationDate: { $gte: ventanaInicio, $lte: ventanaFin }
+        id_restaurante,
+        id_mesa,
+        activo: true,
+        estado: { $in: ["Confirmada", "Atendida"] },
+        fecha_reserva: { $gte: ventanaInicio, $lte: ventanaFin }
     };
 
-    // Al actualizar excluimos la propia reserva del chequeo
     if (excludeReservationId) {
         query._id = { $ne: excludeReservationId };
     }
 
     const solapamiento = await Reservation.findOne(query);
     if (solapamiento) {
-        const horaOcupada = new Date(solapamiento.reservationDate).toLocaleString("es-GT", {
+        const horaOcupada = new Date(solapamiento.fecha_reserva).toLocaleString("es-GT", {
             dateStyle: "short",
             timeStyle: "short"
         });
@@ -69,11 +68,11 @@ export const getReservations = async (req, res) => {
 
         const [reservations, total] = await Promise.all([
             Reservation.find(query)
-                .populate("userId", "nombre email")
-                .populate("restaurantId", "nombre direccion mesas")
+                .populate("id_usuario", "nombre email")
+                .populate("id_restaurante", "nombre direccion mesas")
                 .skip((safePage - 1) * safeLimit)
                 .limit(safeLimit)
-                .sort({ reservationDate: 1 }),
+                .sort({ fecha_reserva: 1 }),
             Reservation.countDocuments(query)
         ]);
 
@@ -85,18 +84,17 @@ export const getReservations = async (req, res) => {
             reservations
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener reservaciones", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener reservaciones" });
     }
 };
 
 // POST - Crear reservacion con validacion de capacidad y solapamiento
 export const createReservation = async (req, res) => {
     try {
-        const { restaurantId, tableId, reservationDate, peopleCount } = req.body;
+        const { id_restaurante, id_mesa, fecha_reserva, cantidad_personas } = req.body;
 
-        // Validar mesa y solapamiento
         try {
-            await validateTableAndOverlap({ restaurantId, tableId, reservationDate, peopleCount });
+            await validateTableAndOverlap({ id_restaurante, id_mesa, fecha_reserva, cantidad_personas });
         } catch (validationError) {
             return res.status(400).json({
                 success: false,
@@ -115,7 +113,7 @@ export const createReservation = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al crear reservación",
-            error: error.message
+           
         });
     }
 };
@@ -138,16 +136,26 @@ export const updateReservation = async (req, res) => {
             return res.status(404).json({ success: false, message: "Reservación no encontrada" });
         }
 
-        const data = req.body;
+        // Verificar ownership para Admin_Restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            if (reservaActual.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para modificar reservaciones de otro restaurante" });
+            }
+        }
 
-        const necesitaValidacion = data.reservationDate || data.tableId || data.peopleCount || data.restaurantId;
+        // Solo permitir campos editables (prevenir mass assignment)
+        const { fecha_reserva, cantidad_personas, estado } = req.body;
+        const data = { fecha_reserva, cantidad_personas, estado };
+        Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+
+        const necesitaValidacion = data.fecha_reserva || data.cantidad_personas;
 
         if (necesitaValidacion) {
             const contexto = {
-                restaurantId: data.restaurantId ?? reservaActual.restaurantId,
-                tableId: data.tableId ?? reservaActual.tableId,
-                reservationDate: data.reservationDate ?? reservaActual.reservationDate,
-                peopleCount: data.peopleCount ?? reservaActual.peopleCount,
+                id_restaurante: reservaActual.id_restaurante,
+                id_mesa: reservaActual.id_mesa,
+                fecha_reserva: data.fecha_reserva ?? reservaActual.fecha_reserva,
+                cantidad_personas: data.cantidad_personas ?? reservaActual.cantidad_personas,
                 excludeReservationId: id
             };
 
@@ -161,7 +169,7 @@ export const updateReservation = async (req, res) => {
             }
         }
 
-        const reservation = await Reservation.findByIdAndUpdate(id, data, { new: true });
+        const reservation = await Reservation.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 
         res.status(200).json({
             success: true,
@@ -169,7 +177,7 @@ export const updateReservation = async (req, res) => {
             reservation
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al actualizar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al actualizar" });
     }
 };
 
@@ -188,7 +196,7 @@ export const deleteReservation = async (req, res) => {
 
         const reservation = await Reservation.findByIdAndUpdate(
             id,
-            { active: false, status: "Cancelled" },
+            { activo: false, estado: "Cancelada" },
             { new: true }
         );
 
@@ -199,6 +207,6 @@ export const deleteReservation = async (req, res) => {
             message: "Reservación cancelada correctamente"
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al cancelar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al cancelar" });
     }
 };

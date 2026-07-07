@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { validateJWT } from "../../middlewares/validate-jwt.js";
 import { hasRole } from "../../middlewares/validate-roles.js";
 import {
     addRecipeItem,
@@ -14,17 +13,18 @@ import {
 } from "../../middlewares/recipes-validator.js";
 
 const router = Router();
+const adminRoles = hasRole('Admin_Restaurante', 'SuperAdmin');
 
 // GET - Obtener receta de un producto
-router.get("/:id", validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateRecipeIdParam, getRecipes);
+router.get("/:id", adminRoles, validateRecipeIdParam, getRecipes);
 
 // POST - Agregar ingrediente a una receta
-router.post("/:id", validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateRecipeItemBody, addRecipeItem);
+router.post("/:id", adminRoles, validateRecipeItemBody, addRecipeItem);
 
 // PUT - Actualizar un ingrediente
-router.put("/:productId/:recipeId", validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateRecipeUpdateDelete, updateRecipeItem);
+router.put("/:productId/:recipeId", adminRoles, validateRecipeUpdateDelete, updateRecipeItem);
 
 // DELETE - Eliminar un ingrediente
-router.delete("/:productId/:recipeId", validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), validateRecipeUpdateDelete, deleteRecipeItem);
+router.delete("/:productId/:recipeId", adminRoles, validateRecipeUpdateDelete, deleteRecipeItem);
 
 export default router;

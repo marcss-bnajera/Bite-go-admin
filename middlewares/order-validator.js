@@ -37,10 +37,6 @@ export const validateCreateOrder = [
         .isFloat({ min: 0 })
         .withMessage('El precio histórico debe ser un número positivo'),
 
-    body('total')
-        .isFloat({ min: 0 })
-        .withMessage('El total debe ser un número positivo'),
-
     checkValidators
 ];
 

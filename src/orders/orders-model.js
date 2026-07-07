@@ -24,6 +24,13 @@ const itemPedidoSchema = new Schema({
         type: Number,
         required: true
     },
+    variaciones_elegidas: [{
+        nombre: String,
+        precio_adicional: { type: Number, default: 0 },
+        afecta_inventario: { type: Boolean, default: false },
+        insumo_relacionado: String,
+        cantidad_insumo: Number
+    }],
     notas: {
         type: String,
         trim: true,

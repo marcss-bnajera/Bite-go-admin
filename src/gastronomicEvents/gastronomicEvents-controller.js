@@ -23,7 +23,7 @@ export const getEventos = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener eventos",
-            error: error.message
+           
         });
     }
 };
@@ -34,12 +34,17 @@ export const getEventos = async (req, res) => {
 export const addEvento = async (req, res) => {
     try {
         const { id } = req.params;
+        const { nombre, descripcion, fechas, servicios } = req.body;
+
         const restaurant = await Restaurant.findByIdAndUpdate(
             id,
-            //$addToSet agrega un elemento al array si no existe para evitar duplicados
-            { $addToSet: { eventos: req.body } },
+            { $addToSet: { eventos: { nombre, descripcion, fechas, servicios } } },
             { new: true }
         );
+
+        if (!restaurant) {
+            return res.status(404).json({ success: false, message: "Restaurante no encontrado" });
+        }
 
         res.status(201).json({
             success: true,
@@ -50,7 +55,6 @@ export const addEvento = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al agregar evento",
-            error: error.message
         });
     }
 };
@@ -117,7 +121,7 @@ export const updateEvento = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al actualizar evento", error: error.message });
+        res.status(500).json({ success: false, message: "Error al actualizar evento" });
     }
 };
 
@@ -142,7 +146,7 @@ export const deleteEvento = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar evento",
-            error: error.message
+           
         });
     }
 };

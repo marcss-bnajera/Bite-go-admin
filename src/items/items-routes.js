@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { validateJWT } from "../../middlewares/validate-jwt.js";
 import { hasRole } from "../../middlewares/validate-roles.js";
 import {
     addItem,
@@ -15,20 +14,21 @@ import {
 } from "../../middlewares/items-validators.js";
 
 const router = Router();
+const adminRoles = hasRole('Admin_Restaurante', 'SuperAdmin');
 
 // GET - Obtener items de un pedido
-router.get("/:id", [validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma')], getItems);
+router.get("/:id", adminRoles, getItems);
 
 // GET - Obtener resumen de variaciones por restaurante
-router.get("/summary/:id_restaurante", [validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma')], getVariationsSummary);
+router.get("/summary/:id_restaurante", adminRoles, getVariationsSummary);
 
 // POST - Agregar item a un pedido con validación de body
-router.post("/:id", [validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), addItemValidator], addItem);
+router.post("/:id", adminRoles, addItemValidator, addItem);
 
 // PUT - Actualizar un item (Validamos orderId, itemId y la nueva cantidad)
-router.put("/:orderId/:itemId", [validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), updateItemValidator], updateItem);
+router.put("/:orderId/:itemId", adminRoles, updateItemValidator, updateItem);
 
 // DELETE - Eliminar un item (Validamos IDs para el $pull y el recalculo)
-router.delete("/:orderId/:itemId", [validateJWT, hasRole('Admin_Restaurante', 'Admin_Plataforma'), deleteItemValidator], deleteItem);
+router.delete("/:orderId/:itemId", adminRoles, deleteItemValidator, deleteItem);
 
 export default router;

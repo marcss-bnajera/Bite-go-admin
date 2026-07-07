@@ -22,7 +22,7 @@ export const getMesas = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener mesas",
-            error: error.message
+           
         });
     }
 };
@@ -67,7 +67,7 @@ export const addMesa = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al agregar mesa",
-            error: error.message
+           
         });
     }
 };
@@ -143,7 +143,7 @@ export const updateMesa = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar mesa",
-            error: error.message
+           
         });
     }
 };
@@ -168,7 +168,7 @@ export const deleteMesa = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar mesa",
-            error: error.message
+           
         });
     }
 };

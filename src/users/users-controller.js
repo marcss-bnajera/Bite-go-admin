@@ -31,7 +31,7 @@ export const getUsers = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener usuarios",
-            error: error.message
+           
         });
     }
 };
@@ -44,8 +44,8 @@ export const register = async (req, res) => {
         const { password, ...data } = req.body;
 
         // Encriptar contraseña
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(password, salt);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         const user = new User({
             ...data,
@@ -62,7 +62,7 @@ export const register = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al registrar usuario",
-            error: error.message
+           
         });
     }
 };
@@ -80,11 +80,11 @@ export const updateUser = async (req, res) => {
         Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
         if (password) {
-            const salt = bcrypt.genSaltSync(10);
-            data.password = bcrypt.hashSync(password, salt);
+            const salt = await bcrypt.genSalt(10);
+            data.password = await bcrypt.hash(password, salt);
         }
 
-        const user = await User.findByIdAndUpdate(id, data, { new: true });
+        const user = await User.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 
         if (!user) return res.status(404).json({
             success: false,
@@ -100,7 +100,7 @@ export const updateUser = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar",
-            error: error.message
+           
         });
     }
 };
@@ -127,7 +127,7 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar",
-            error: error.message
+           
         });
     }
 };
@@ -151,7 +151,7 @@ export const activateUser = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al activar",
-            error: error.message
+           
         });
     }
 };

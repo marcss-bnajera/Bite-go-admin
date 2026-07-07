@@ -26,7 +26,7 @@ export const getRecipes = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener la receta",
-            error: error.message
+           
         });
     }
 };
@@ -77,7 +77,7 @@ export const addRecipeItem = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al agregar ingrediente",
-            error: error.message
+           
         });
     }
 };
@@ -125,7 +125,7 @@ export const updateRecipeItem = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar ingrediente",
-            error: error.message
+           
         });
     }
 };
@@ -155,7 +155,7 @@ export const deleteRecipeItem = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar ingrediente",
-            error: error.message
+           
         });
     }
 };

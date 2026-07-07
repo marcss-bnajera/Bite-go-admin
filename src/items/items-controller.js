@@ -20,7 +20,7 @@ export const getItems = async (req, res) => {
             items: order.items
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener items", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener items" });
     }
 };
 
@@ -34,12 +34,12 @@ export const getVariationsSummary = async (req, res) => {
         const orders = await Order.find({
             id_restaurante,
             estado: { $in: ['Pendiente', 'Preparacion'] }
-        }).select("items.variaciones_elegidas items.nombre_producto");
+        }).select("items.variaciones_elegidas items.nombre_historico");
 
         const resumen = orders.flatMap(order =>
             order.items.flatMap(item =>
                 item.variaciones_elegidas.map(v => ({
-                    producto: item.nombre_producto,
+                    producto: item.nombre_historico,
                     variacion: v.nombre,
                     notas: item.notas
                 }))
@@ -48,7 +48,7 @@ export const getVariationsSummary = async (req, res) => {
 
         res.status(200).json({ success: true, data: resumen });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };
 
@@ -92,7 +92,7 @@ export const addItem = async (req, res) => {
             items: order.items
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al agregar item", error: error.message });
+        res.status(500).json({ success: false, message: "Error al agregar item" });
     }
 };
 
@@ -157,7 +157,7 @@ export const updateItem = async (req, res) => {
             order: orderUpdated
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };
 
@@ -206,12 +206,14 @@ export const deleteItem = async (req, res) => {
             { new: true }
         );
 
+        if (!order) return res.status(404).json({ success: false, message: "Pedido no encontrado" });
+
         res.status(200).json({
             success: true,
             message: "Item eliminado e ingredientes devueltos al inventario",
             total: order.total
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };

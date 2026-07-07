@@ -6,13 +6,15 @@ import Restaurant from "./restaurants-model.js";
 export const getRestaurants = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
+        const safePage = Math.max(1, parseInt(page) || 1);
+        const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const { activo } = req.query;
         const query = activo !== undefined ? { activo: activo === 'true' } : {};
 
         const [restaurants, total] = await Promise.all([
             Restaurant.find(query)
-                .skip((page - 1) * limit)
-                .limit(parseInt(limit))
+                .skip((safePage - 1) * safeLimit)
+                .limit(safeLimit)
                 .sort({ createdAt: -1 }),
             Restaurant.countDocuments(query)
         ]);
@@ -20,12 +22,12 @@ export const getRestaurants = async (req, res) => {
         res.status(200).json({
             success: true,
             total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / safeLimit),
+            currentPage: safePage,
             restaurants
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener" });
     }
 };
 
@@ -49,7 +51,7 @@ export const createRestaurant = async (req, res) => {
             restaurant
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al crear", error: error.message });
+        res.status(500).json({ success: false, message: "Error al crear" });
     }
 };
 
@@ -73,7 +75,7 @@ export const addTable = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Mesa agregada", restaurant });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };
 
@@ -85,12 +87,12 @@ export const updateRestaurant = async (req, res) => {
         const { id } = req.params;
         const { mesas, eventos, ...data } = req.body;
 
-        const restaurant = await Restaurant.findByIdAndUpdate(id, data, { new: true });
+        const restaurant = await Restaurant.findByIdAndUpdate(id, data, { new: true, runValidators: true });
         if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
 
         res.status(200).json({ success: true, restaurant });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };
 
@@ -106,7 +108,7 @@ export const deleteRestaurant = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Desactivado correctamente" });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };
 export const activateRestaurant = async (req, res) => {
@@ -116,6 +118,6 @@ export const activateRestaurant = async (req, res) => {
         if (!restaurant) return res.status(404).json({ success: false, message: "No encontrado" });
         res.status(200).json({ success: true, message: "Restaurante reactivado correctamente" });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, message: "Error interno del servidor" });
     }
 };

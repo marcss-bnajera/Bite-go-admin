@@ -29,6 +29,6 @@ router.post("/", hasRole('SuperAdmin'), validateCreateRestaurant, createRestaura
 router.put("/:id", hasRole('SuperAdmin', 'Admin_Restaurante'), validateRestaurantId, checkRestaurantOwnership, updateRestaurant);
 router.delete("/:id", hasRole('SuperAdmin'), validateRestaurantId, deleteRestaurant);
 router.patch("/:id/activate", hasRole('SuperAdmin'), validateRestaurantId, activateRestaurant);
-router.post("/:id/add-table", hasRole('SuperAdmin', 'Admin_Restaurante'), checkRestaurantOwnership, addTable);
+router.post("/:id/add-table", hasRole('SuperAdmin', 'Admin_Restaurante'), validateRestaurantId, checkRestaurantOwnership, addTable);
 
 export default router;

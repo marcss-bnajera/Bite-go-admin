@@ -1,4 +1,4 @@
-`use strict`
+'use strict'
 
 import { Schema, model } from 'mongoose';
 
@@ -16,12 +16,14 @@ const suppliesInventorySchema = new Schema({
     stock_actual: {
         type: Number,
         required: true,
-        default: 0
+        default: 0,
+        min: [0, 'El stock actual no puede ser negativo']
     },
     stock_minimo: {
         type: Number,
         required: true,
-        default: 0
+        default: 0,
+        min: [0, 'El stock mínimo no puede ser negativo']
     },
 
     activo: {

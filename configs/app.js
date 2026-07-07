@@ -1,4 +1,4 @@
-`use strict`;
+'use strict';
 // Importaciones
 import express from "express";
 import cors from "cors";
@@ -19,7 +19,8 @@ import suppliesInventoryRoutes from "../src/suppliesInventory/suppliesInventory-
 import reservationsRoutes from "../src/reservations/reservations-routes.js";
 import categoriesRoutes from "../src/categories/categories-routes.js";
 import { validateJWT } from "../middlewares/validate-jwt.js";
-import { errorHandler } from '../middlewares/handle-erros.js';
+import { errorHandler } from '../middlewares/handle-errors.js';
+import interServiceRoutes from "../src/inter-service/inter-service-routes.js";
 
 const BASE_URL = '/bite-and-go/v1';
 
@@ -37,6 +38,9 @@ const middlewares = (app) => {
 
 //Integracion de todas las rutas
 const routes = (app) => {
+    // Rutas inter-servicio (sin JWT — solo accesibles desde red Docker interna)
+    app.use(`${BASE_URL}/inventory`, interServiceRoutes);
+
     app.use(`${BASE_URL}`, validateJWT);
 
     app.use(`${BASE_URL}/users`, usersRoutes);

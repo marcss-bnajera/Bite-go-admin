@@ -36,7 +36,7 @@ export const getProducts = async (req, res) => {
             products
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener productos", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener productos" });
     }
 };
 
@@ -65,7 +65,7 @@ export const getProductsByRestaurant = async (req, res) => {
             products
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al obtener productos", error: error.message });
+        res.status(500).json({ success: false, message: "Error al obtener productos" });
     }
 };
 
@@ -79,7 +79,7 @@ export const getProductById = async (req, res) => {
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, product });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error en el servidor", error: error.message });
+        res.status(500).json({ success: false, message: "Error en el servidor" });
     }
 };
 
@@ -105,7 +105,7 @@ export const createProduct = async (req, res) => {
 
         res.status(201).json({ success: true, message: "Producto creado exitosamente", product });
     } catch (error) {
-        res.status(400).json({ success: false, message: "Datos de producto inválidos", error: error.message });
+        res.status(400).json({ success: false, message: "Datos de producto inválidos" });
     }
 };
 
@@ -143,7 +143,7 @@ export const updateProduct = async (req, res) => {
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, message: "Información del producto actualizada", product });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al actualizar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al actualizar" });
     }
 };
 
@@ -165,7 +165,7 @@ export const deleteProduct = async (req, res) => {
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, message: "Producto dado de baja exitosamente" });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al eliminar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al eliminar" });
     }
 };
 
@@ -187,6 +187,6 @@ export const activateProduct = async (req, res) => {
         if (!product) return res.status(404).json({ success: false, message: "Producto no encontrado" });
         res.status(200).json({ success: true, message: "Producto reactivado exitosamente" });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al reactivar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al reactivar" });
     }
 };

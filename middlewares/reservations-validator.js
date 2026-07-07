@@ -5,19 +5,19 @@ import { checkValidators } from './check-validators.js';
  * Validaciones para CREAR una reservación
  */
 export const validateCreateReservation = [
-    body('userId')
+    body('id_usuario')
         .notEmpty().withMessage('El ID del usuario es obligatorio')
         .isMongoId().withMessage('ID de usuario no válido'),
 
-    body('restaurantId')
+    body('id_restaurante')
         .notEmpty().withMessage('El ID del restaurante es obligatorio')
         .isMongoId().withMessage('ID de restaurante no válido'),
 
-    body('tableId')
+    body('id_mesa')
         .notEmpty().withMessage('El ID de la mesa es obligatorio')
         .isMongoId().withMessage('ID de mesa no válido'),
 
-    body('reservationDate')
+    body('fecha_reserva')
         .notEmpty().withMessage('La fecha y hora son obligatorias')
         .isISO8601({ strict: true }).withMessage('Formato de fecha no válido (debe ser ISO8601 con zona horaria)')
         .custom((value) => {
@@ -29,7 +29,7 @@ export const validateCreateReservation = [
             return true;
         }),
 
-    body('peopleCount')
+    body('cantidad_personas')
         .notEmpty().withMessage('La cantidad de personas es obligatoria')
         .isInt({ min: 1, max: 20 })
         .withMessage('La cantidad de personas debe ser entre 1 y 20'),
@@ -45,7 +45,7 @@ export const validateUpdateReservation = [
         .isMongoId()
         .withMessage('ID de reservación no válido'),
 
-    body('reservationDate')
+    body('fecha_reserva')
         .optional()
         .isISO8601({ strict: true }).withMessage('Formato de fecha no válido (debe ser ISO8601 con zona horaria)')
         .custom((value) => {
@@ -55,14 +55,14 @@ export const validateUpdateReservation = [
             return true;
         }),
 
-    body('peopleCount')
+    body('cantidad_personas')
         .optional()
         .isInt({ min: 1 })
         .withMessage('La cantidad de personas debe ser al menos 1'),
 
-    body('status')
+    body('estado')
         .optional()
-        .isIn(['Confirmed', 'Attended', 'Cancelled'])
+        .isIn(['Confirmada', 'Atendida', 'Cancelada'])
         .withMessage('Estado de reserva no válido'),
 
     checkValidators

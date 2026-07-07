@@ -11,8 +11,12 @@ import {
 import { createProductValidator, updateProductValidator } from '../../middlewares/product-validators.js';
 import { uploadProductImage } from '../../middlewares/file-uploader.js';
 import { cleanupUploadedFileOnFinish } from '../../middlewares/delete-file-on-error.js';
+import { hasRole } from '../../middlewares/validate-roles.js';
+import { param } from 'express-validator';
+import { checkValidators } from '../../middlewares/check-validators.js';
 
 const router = Router();
+const adminRoles = hasRole('SuperAdmin', 'Admin_Restaurante');
 
 const handleUpload = (req, res, next) => {
     uploadProductImage.single('foto')(req, res, (err) => {
@@ -57,7 +61,13 @@ router.put(
     updateProduct
 );
 
-router.delete('/:id', deleteProduct);
-router.patch('/:id/activate', activateProduct);
+router.delete('/:id', adminRoles, [
+    param('id').isMongoId().withMessage('ID de producto no válido'),
+    checkValidators
+], deleteProduct);
+router.patch('/:id/activate', adminRoles, [
+    param('id').isMongoId().withMessage('ID de producto no válido'),
+    checkValidators
+], activateProduct);
 
 export default router;

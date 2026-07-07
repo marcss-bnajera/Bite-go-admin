@@ -6,6 +6,8 @@ import Category from "./categories-model.js";
 export const getCategories = async (req, res) => {
     try {
         const { page = 1, limit = 10, restaurante, activo } = req.query;
+        const safePage = Math.max(1, parseInt(page) || 1);
+        const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = {};
         if (activo !== undefined) query.activo = activo === 'true';
 
@@ -18,8 +20,8 @@ export const getCategories = async (req, res) => {
 
         const [categories, total] = await Promise.all([
             Category.find(query)
-                .skip((page - 1) * limit)
-                .limit(parseInt(limit))
+                .skip((safePage - 1) * safeLimit)
+                .limit(safeLimit)
                 .sort({ createdAt: -1 })
                 .populate('id_restaurante', 'nombre'),
             Category.countDocuments(query)
@@ -28,15 +30,15 @@ export const getCategories = async (req, res) => {
         res.status(200).json({
             success: true,
             total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: parseInt(page),
+            totalPages: Math.ceil(total / safeLimit),
+            currentPage: safePage,
             categories
         });
     } catch (error) {
         res.status(500).json({
             success: false,
             message: "Error al obtener categorías",
-            error: error.message
+           
         });
     }
 };
@@ -65,7 +67,7 @@ export const createCategory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al crear la categoría",
-            error: error.message
+           
         });
     }
 };
@@ -88,7 +90,7 @@ export const updateCategory = async (req, res) => {
             }
         }
 
-        const category = await Category.findByIdAndUpdate(id, data, { new: true });
+        const category = await Category.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 
         if (!category) return res.status(404).json({
             success: false,
@@ -104,7 +106,7 @@ export const updateCategory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar la categoría",
-            error: error.message
+           
         });
     }
 };
@@ -141,7 +143,7 @@ export const deleteCategory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al eliminar la categoría",
-            error: error.message
+           
         });
     }
 };
@@ -176,7 +178,7 @@ export const activateCategory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al activar la categoría",
-            error: error.message
+           
         });
     }
 };

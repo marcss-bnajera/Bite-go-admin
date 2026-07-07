@@ -3,48 +3,39 @@ import { Schema, model } from 'mongoose';
 
 // Esquema para las Reservaciones
 const reservationSchema = new Schema({
-    // Referencia al usuario que realiza la reserva
-    userId: {
+    id_usuario: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: [true, 'El usuario es obligatorio']
     },
-    // Referencia al restaurante donde se reserva
-    restaurantId: {
+    id_restaurante: {
         type: Schema.Types.ObjectId,
         ref: 'Restaurant',
         required: [true, 'El restaurante es obligatorio']
     },
-    // ID de la mesa (referencia a la subcoleccion dentro de restaurante)
-    tableId: {
+    id_mesa: {
         type: Schema.Types.ObjectId,
         required: [true, 'La mesa es obligatoria']
     },
-    // Fecha y hora programada para la reserva
-    reservationDate: {
+    fecha_reserva: {
         type: Date,
         required: [true, 'La fecha y hora son obligatorias']
     },
-    // Cantidad de personas que asistiran
-    peopleCount: {
+    cantidad_personas: {
         type: Number,
         required: [true, 'La cantidad de personas es obligatoria']
     },
-    // Estado actual de la reserva
-    status: {
+    estado: {
         type: String,
-        enum: ['Confirmed', 'Attended', 'Cancelled'],
-        default: 'Confirmed'
+        enum: ['Confirmada', 'Atendida', 'Cancelada'],
+        default: 'Confirmada'
     },
-    // Estado logico para control de eliminacion
-    active: {
+    activo: {
         type: Boolean,
         default: true
     }
 }, {
-    // Registro automatico de creacion y actualizacion
     timestamps: true,
-    // Formateo de respuesta JSON
     toJSON: {
         transform: function (doc, ret) {
             delete ret.__v;
@@ -53,5 +44,4 @@ const reservationSchema = new Schema({
     }
 });
 
-// Exportar el modelo
 export default model('Reservation', reservationSchema);

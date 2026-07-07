@@ -1,7 +1,7 @@
 import Order from "./orders-model.js";
 import Product from "../products/products-model.js";
 import { validateOrderAssignments } from '../../middlewares/order-logic-validators.js';
-import { reduceStockFromOrder } from '../suppliesInventory/suppliesInventory-controller.js';
+import { reduceStockFromOrder, adjustStockFromItemUpdate } from '../suppliesInventory/suppliesInventory-controller.js';
 
 /**
  * GET - Listar pedidos con paginación
@@ -36,7 +36,7 @@ export const getOrders = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener pedidos",
-            error: error.message
+           
         });
     }
 };
@@ -64,7 +64,7 @@ export const getOrderById = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener pedido",
-            error: error.message
+           
         });
     }
 };
@@ -99,7 +99,7 @@ export const getOrdersByUser = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener pedidos del usuario",
-            error: error.message
+           
         });
     }
 };
@@ -134,7 +134,7 @@ export const getOrdersByRestaurant = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al obtener pedidos del restaurante",
-            error: error.message
+           
         });
     }
 };
@@ -225,7 +225,7 @@ export const createOrder = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al crear pedido",
-            error: error.message
+           
         });
     }
 };
@@ -245,9 +245,21 @@ export const updateOrder = async (req, res) => {
             });
         }
 
-        const { estado, tipo_servicio, id_mesero_asignado, id_repartidor_asignado, id_restaurante, notas, activo } = req.body;
-        const data = { estado, tipo_servicio, id_mesero_asignado, id_repartidor_asignado, id_restaurante, notas, activo };
+        // Solo permitir campos editables (prevenir mass assignment)
+        const { estado, tipo_servicio, id_mesero_asignado, id_repartidor_asignado, notas } = req.body;
+        const data = { estado, tipo_servicio, id_mesero_asignado, id_repartidor_asignado, notas };
         Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+
+        // Verificar ownership para Admin_Restaurante
+        if (req.user.rol === 'Admin_Restaurante') {
+            const orderActual = await Order.findById(id).select('id_restaurante');
+            if (!orderActual) {
+                return res.status(404).json({ success: false, message: "Pedido no encontrado" });
+            }
+            if (orderActual.id_restaurante.toString() !== req.user.id_restaurante.toString()) {
+                return res.status(403).json({ success: false, message: "No tienes permiso para modificar pedidos de otro restaurante" });
+            }
+        }
 
         if (data.tipo_servicio) {
             const orderActual = await Order.findById(id);
@@ -273,13 +285,28 @@ export const updateOrder = async (req, res) => {
             }
         }
 
-        const order = await Order.findByIdAndUpdate(id, data, { new: true });
+        const order = await Order.findByIdAndUpdate(id, data, { new: true, runValidators: true });
 
         if (!order) {
             return res.status(404).json({
                 success: false,
                 message: "Pedido no encontrado"
             });
+        }
+
+        // Si se canceló el pedido, restaurar stock
+        if (data.estado === 'Cancelado') {
+            try {
+                for (const item of order.items) {
+                    await adjustStockFromItemUpdate(
+                        { id_producto: item.id_producto },
+                        order.id_restaurante,
+                        -item.cantidad
+                    );
+                }
+            } catch (stockError) {
+                console.error("Advertencia: pedido cancelado pero stock no pudo restaurarse:", stockError.message);
+            }
         }
 
         res.status(200).json({
@@ -291,7 +318,6 @@ export const updateOrder = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error al actualizar pedido",
-            error: error.message
         });
     }
 };
@@ -300,8 +326,7 @@ export const deleteOrder = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const order = await Order.findByIdAndUpdate(id, { activo: false }, { new: true });
-
+        const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({
                 success: false,
@@ -309,15 +334,31 @@ export const deleteOrder = async (req, res) => {
             });
         }
 
+        // Restaurar stock si el pedido no estaba ya cancelado o entregado
+        if (!['Cancelado', 'Entregado'].includes(order.estado)) {
+            try {
+                for (const item of order.items) {
+                    await adjustStockFromItemUpdate(
+                        { id_producto: item.id_producto },
+                        order.id_restaurante,
+                        -item.cantidad
+                    );
+                }
+            } catch (stockError) {
+                console.error("Advertencia: pedido desactivado pero stock no pudo restaurarse:", stockError.message);
+            }
+        }
+
+        await Order.findByIdAndUpdate(id, { activo: false, estado: 'Cancelado' });
+
         res.status(200).json({
             success: true,
-            message: "Pedido desactivado correctamente"
+            message: "Pedido desactivado y stock restaurado correctamente"
         });
     } catch (error) {
         res.status(500).json({
             success: false,
             message: "Error al eliminar pedido",
-            error: error.message
         });
     }
 };
@@ -328,6 +369,6 @@ export const activateOrder = async (req, res) => {
         if (!order) return res.status(404).json({ success: false, message: "Pedido no encontrado" });
         res.status(200).json({ success: true, message: "Pedido reactivado correctamente" });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Error al reactivar", error: error.message });
+        res.status(500).json({ success: false, message: "Error al reactivar" });
     }
 };

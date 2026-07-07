@@ -13,19 +13,20 @@ import {
 } from "../../middlewares/categories-validator.js";
 
 const router = Router();
+const adminRoles = hasRole('SuperAdmin', 'Admin_Restaurante');
 
 // Obtener categorías (se puede filtrar por ?restaurante=ID)
-router.get('/', hasRole('Admin_Restaurante'), getCategories);
+router.get('/', adminRoles, getCategories);
 
 // Crear categoría
-router.post('/', hasRole('Admin_Restaurante'), validateCreateCategory, createCategory);
+router.post('/', adminRoles, validateCreateCategory, createCategory);
 
 // Actualizar categoría por ID
-router.put('/:id', hasRole('Admin_Restaurante'), validateUpdateCategory, updateCategory);
+router.put('/:id', adminRoles, validateUpdateCategory, updateCategory);
 
 // Eliminar (desactivar) categoría por ID
-router.delete('/:id', hasRole('Admin_Restaurante'), deleteCategory);
+router.delete('/:id', adminRoles, deleteCategory);
 
-router.patch('/:id/activate', hasRole('Admin_Restaurante'), activateCategory);
+router.patch('/:id/activate', adminRoles, activateCategory);
 
 export default router;
