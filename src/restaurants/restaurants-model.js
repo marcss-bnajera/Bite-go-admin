@@ -20,6 +20,21 @@ const eventoSchema = new Schema({
     servicios: { type: [String] }
 });
 
+const sucursalSchema = new Schema({
+    nombre: { type: String, trim: true },
+    direccion: { texto: { type: String, required: true } },
+    latitud: { type: Number },
+    longitud: { type: Number },
+    horarios_atencion: { type: String, required: true },
+    informacion_contacto: {
+        telefono: { type: String },
+        email: { type: String }
+    },
+    fotos_url: { type: [String], default: [] },
+    mesas: [mesaSchema],
+    activo: { type: Boolean, default: true }
+});
+
 const restaurantSchema = new Schema({
     nombre: {
         type: String,
@@ -33,6 +48,7 @@ const restaurantSchema = new Schema({
     horarios_atencion: { type: String, required: true },
     categoria_gastronomica: { type: String, required: true },
     fotos_url: { type: [String], default: [] },
+    foto_public_id: { type: String, default: null },
     precio_promedio: { type: Number, required: true },
     informacion_contacto: {
         telefono: { type: String },
@@ -40,6 +56,8 @@ const restaurantSchema = new Schema({
     },
     mesas: [mesaSchema],
     eventos: [eventoSchema],
+    tiene_sucursales: { type: Boolean, default: false },
+    sucursales: [sucursalSchema],
     activo: { type: Boolean, default: true }
 }, {
     timestamps: true,
