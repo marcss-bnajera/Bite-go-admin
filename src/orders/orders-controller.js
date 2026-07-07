@@ -1,36 +1,47 @@
 import Order from "./orders-model.js";
 import Product from "../products/products-model.js";
+import User from "../users/users-model.js";
 import { validateOrderAssignments } from '../../middlewares/order-logic-validators.js';
 import { reduceStockFromOrder, adjustStockFromItemUpdate } from '../suppliesInventory/suppliesInventory-controller.js';
+
+const attachClientNames = async (orders) => {
+    const authIds = [...new Set(orders.map((o) => o.id_usuario_cliente).filter(Boolean))];
+    if (authIds.length === 0) return orders;
+    const users = await User.find({ auth_id: { $in: authIds } }).select("auth_id nombre");
+    const map = new Map(users.map((u) => [u.auth_id, u.nombre]));
+    return orders.map((o) => ({ ...o.toObject(), cliente_nombre: map.get(o.id_usuario_cliente) || null }));
+};
 
 /**
  * GET - Listar pedidos con paginación
  */
 export const getOrders = async (req, res) => {
     try {
-        const { page = 1, limit = 10, activo } = req.query;
+        const { page = 1, limit = 10, activo, id_sucursal } = req.query;
         const safePage = Math.max(1, parseInt(page) || 1);
         const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = activo !== undefined ? { activo: activo === 'true' } : { activo: true };
+        if (id_sucursal) query.id_sucursal = id_sucursal;
 
         const [orders, total] = await Promise.all([
             Order.find(query)
                 .skip((safePage - 1) * safeLimit)
                 .limit(safeLimit)
                 .sort({ createdAt: -1 })
-                .populate('id_usuario_cliente', 'nombre')
                 .populate('id_restaurante', 'nombre')
                 .populate('id_mesero_asignado', 'nombre')
                 .populate('id_repartidor_asignado', 'nombre'),
             Order.countDocuments(query)
         ]);
 
+        const enriched = await attachClientNames(orders);
+
         res.status(200).json({
             success: true,
             total,
             totalPages: Math.ceil(total / safeLimit),
             currentPage: safePage,
-            orders
+            orders: enriched
         });
     } catch (error) {
         res.status(500).json({
@@ -56,9 +67,11 @@ export const getOrderById = async (req, res) => {
             });
         }
 
+        const enriched = await attachClientNames([order]);
+
         res.status(200).json({
             success: true,
-            order
+            order: enriched[0]
         });
     } catch (error) {
         res.status(500).json({
@@ -88,12 +101,14 @@ export const getOrdersByUser = async (req, res) => {
             Order.countDocuments(query)
         ]);
 
+        const enriched = await attachClientNames(orders);
+
         res.status(200).json({
             success: true,
             total,
             totalPages: Math.ceil(total / safeLimit),
             currentPage: safePage,
-            orders
+            orders: enriched
         });
     } catch (error) {
         res.status(500).json({
@@ -110,10 +125,11 @@ export const getOrdersByUser = async (req, res) => {
 export const getOrdersByRestaurant = async (req, res) => {
     try {
         const { id_restaurante } = req.params;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, id_sucursal } = req.query;
         const safePage = Math.max(1, parseInt(page) || 1);
         const safeLimit = Math.min(Math.max(1, parseInt(limit) || 10), 100);
         const query = { id_restaurante, activo: true };
+        if (id_sucursal) query.id_sucursal = id_sucursal;
 
         const [orders, total] = await Promise.all([
             Order.find(query)
@@ -123,12 +139,14 @@ export const getOrdersByRestaurant = async (req, res) => {
             Order.countDocuments(query)
         ]);
 
+        const enriched = await attachClientNames(orders);
+
         res.status(200).json({
             success: true,
             total,
             totalPages: Math.ceil(total / safeLimit),
             currentPage: safePage,
-            orders
+            orders: enriched
         });
     } catch (error) {
         res.status(500).json({
@@ -143,7 +161,7 @@ export const createOrder = async (req, res) => {
     try {
         const {
             id_usuario_cliente, id_restaurante, tipo_servicio,
-            id_mesero_asignado, id_repartidor_asignado, notas, items
+            id_mesero_asignado, id_repartidor_asignado, notas, items, id_sucursal
         } = req.body;
 
         if (!items || items.length === 0) {
@@ -196,6 +214,7 @@ export const createOrder = async (req, res) => {
         const order = await Order.create({
             id_usuario_cliente,
             id_restaurante,
+            id_sucursal: id_sucursal || "",
             tipo_servicio,
             id_mesero_asignado: id_mesero_asignado || null,
             id_repartidor_asignado: id_repartidor_asignado || null,
@@ -206,7 +225,7 @@ export const createOrder = async (req, res) => {
 
         // Descontar inventario — si falla por stock insuficiente, revertimos la orden
         try {
-            await reduceStockFromOrder(itemsCalculados, id_restaurante);
+            await reduceStockFromOrder(itemsCalculados, id_restaurante, id_sucursal || "");
         } catch (stockError) {
             // Revertir la orden creada para mantener consistencia
             await Order.findByIdAndDelete(order._id);
@@ -301,7 +320,8 @@ export const updateOrder = async (req, res) => {
                     await adjustStockFromItemUpdate(
                         { id_producto: item.id_producto },
                         order.id_restaurante,
-                        -item.cantidad
+                        -item.cantidad,
+                        order.id_sucursal || ""
                     );
                 }
             } catch (stockError) {
@@ -341,7 +361,8 @@ export const deleteOrder = async (req, res) => {
                     await adjustStockFromItemUpdate(
                         { id_producto: item.id_producto },
                         order.id_restaurante,
-                        -item.cantidad
+                        -item.cantidad,
+                        order.id_sucursal || ""
                     );
                 }
             } catch (stockError) {
