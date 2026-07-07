@@ -36,6 +36,16 @@ export const addEvento = async (req, res) => {
         const { id } = req.params;
         const { nombre, descripcion, fechas, servicios } = req.body;
 
+        if (!fechas || !Array.isArray(fechas) || fechas.length === 0) {
+            return res.status(400).json({ success: false, message: "Debes agregar al menos una fecha" });
+        }
+
+        const ahora = new Date();
+        const fechasInvalidas = fechas.filter(f => new Date(f) < ahora);
+        if (fechasInvalidas.length > 0) {
+            return res.status(400).json({ success: false, message: "Las fechas del evento deben ser en el futuro" });
+        }
+
         const restaurant = await Restaurant.findByIdAndUpdate(
             id,
             { $addToSet: { eventos: { nombre, descripcion, fechas, servicios } } },
