@@ -28,10 +28,18 @@ export const validateEventoBody = [
         .isLength({ max: 200 })
         .withMessage('La descripción es demasiado larga (máx 200)'),
 
-    body('fecha')
-        .optional()
+    body('fechas')
+        .isArray({ min: 1 })
+        .withMessage('Debes agregar al menos una fecha'),
+    body('fechas.*')
         .isISO8601()
-        .withMessage('La fecha debe ser un formato válido (AAAA-MM-DD)'),
+        .withMessage('Cada fecha debe ser un formato válido (ISO8601)')
+        .custom((value) => {
+            if (new Date(value) < new Date()) {
+                throw new Error('Las fechas del evento deben ser en el futuro');
+            }
+            return true;
+        }),
 
     checkValidators
 ];
@@ -57,8 +65,12 @@ export const validateCreateRestaurant = [
         .withMessage('El nombre es obligatorio'),
     body('direccion.texto')
         .trim()
-        .notEmpty()
-        .withMessage('La dirección es obligatoria'),
+        .custom((value, { req }) => {
+            if (!req.body.tiene_sucursales && !value) {
+                throw new Error('La dirección es obligatoria');
+            }
+            return true;
+        }),
     body('horarios_atencion')
         .trim()
         .notEmpty()

@@ -7,7 +7,7 @@ import { checkValidators } from './check-validators.js';
 export const validateCreateOrder = [
     body('id_usuario_cliente')
         .notEmpty().withMessage('El ID del cliente es obligatorio')
-        .isMongoId().withMessage('ID de cliente no válido'),
+        .isString().withMessage('ID de cliente no válido'),
 
     body('id_restaurante')
         .notEmpty().withMessage('El ID del restaurante es obligatorio')
@@ -36,6 +36,11 @@ export const validateCreateOrder = [
     body('items.*.precio_historico')
         .isFloat({ min: 0 })
         .withMessage('El precio histórico debe ser un número positivo'),
+
+    body('direccion_entrega')
+        .if(body('tipo_servicio').equals('Domicilio'))
+        .notEmpty().withMessage('La dirección de entrega es obligatoria para pedidos a domicilio')
+        .isString().withMessage('La dirección debe ser un texto'),
 
     checkValidators
 ];

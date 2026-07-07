@@ -7,7 +7,7 @@ import { checkValidators } from './check-validators.js';
 export const validateCreateReservation = [
     body('id_usuario')
         .notEmpty().withMessage('El ID del usuario es obligatorio')
-        .isMongoId().withMessage('ID de usuario no válido'),
+        .isString().withMessage('ID de usuario no válido'),
 
     body('id_restaurante')
         .notEmpty().withMessage('El ID del restaurante es obligatorio')

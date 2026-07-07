@@ -2,7 +2,6 @@ import User from "../src/users/users-model.js";
 import mongoose from 'mongoose';
 
 export const validateOrderAssignments = async function () {
-    // Validamos si el ID de mesero tiene un formato válido antes de buscarlo
     if (this.tipo_servicio === 'Comer aquí') {
         if (!this.id_mesero_asignado) {
             throw new Error('Se debe colocar el ID de un mesero para crear este pedido.');
@@ -19,7 +18,6 @@ export const validateOrderAssignments = async function () {
         this.id_repartidor_asignado = null;
     }
 
-    // Validación para Domicilio
     if (this.tipo_servicio === 'Domicilio') {
         if (!this.id_repartidor_asignado) {
             throw new Error('Se debe colocar el ID de un repartidor para pedidos a domicilio.');
@@ -36,7 +34,6 @@ export const validateOrderAssignments = async function () {
         this.id_mesero_asignado = null;
     }
 
-    // Para llevar
     if (this.tipo_servicio === 'Para llevar') {
         this.id_mesero_asignado = null;
         this.id_repartidor_asignado = null;

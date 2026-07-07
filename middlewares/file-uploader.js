@@ -80,5 +80,10 @@ export const uploadProductImage = createCloudinaryUploader(
     process.env.CLOUDINARY_PRODUCTS_FOLDER || 'restaurant/products'
 );
 
+// Uploader para imágenes del restaurante
+export const uploadRestaurantImage = createCloudinaryUploader(
+    process.env.CLOUDINARY_RESTAURANTS_FOLDER || 'restaurant/covers'
+);
+
 // Export cloudinary instance para usar en delete-file-on-error
 export { cloudinary };
