@@ -25,8 +25,8 @@ export const validateEventoBody = [
     body('descripcion')
         .optional()
         .trim()
-        .isLength({ max: 200 })
-        .withMessage('La descripción es demasiado larga (máx 200)'),
+        .isLength({ max: 500 })
+        .withMessage('La descripción es demasiado larga (máx 500)'),
 
     body('fechas')
         .isArray({ min: 1 })

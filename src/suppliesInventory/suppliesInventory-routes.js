@@ -7,7 +7,8 @@ import {
     updateInsumo,
     deleteInsumo,
     getLowStockAlerts,
-    activateInsumo
+    activateInsumo,
+    checkStockAvailability
 } from "./suppliesInventory-controller.js";
 import {
     createInsumoValidator,
@@ -25,6 +26,23 @@ router.get("/alerts/:id_restaurante", auth, getLowStockAlerts);
 
 // Crear insumo con validaciones de campos obligatorios
 router.post("/", auth, createInsumoValidator, createInsumo);
+
+// Verificar stock disponible (uso interno)
+router.post("/check", async (req, res) => {
+    try {
+        const { items, id_restaurante, id_sucursal } = req.body;
+        if (!items || !id_restaurante) {
+            return res.status(400).json({ success: false, message: "Faltan items o id_restaurante" });
+        }
+        const faltantes = await checkStockAvailability(items, id_restaurante, id_sucursal || '');
+        if (faltantes.length > 0) {
+            return res.status(400).json({ success: false, message: "Stock insuficiente", faltantes });
+        }
+        res.status(200).json({ success: true, message: "Stock disponible" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error al verificar stock" });
+    }
+});
 
 // Ajustar stock con validación de ID y cantidad numérica
 router.put("/adjust/:id", auth, adjustStockValidator, adjustStock);
