@@ -45,14 +45,17 @@ const itemPedidoSchema = new Schema({
  */
 const orderSchema = new Schema({
     id_usuario_cliente: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: [true, 'El cliente es obligatorio']
     },
     id_restaurante: {
         type: Schema.Types.ObjectId,
         ref: 'Restaurant',
         required: [true, 'El restaurante es obligatorio']
+    },
+    id_sucursal: {
+        type: String,
+        default: ''
     },
     id_mesero_asignado: {
         type: Schema.Types.ObjectId,

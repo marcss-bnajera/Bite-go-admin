@@ -4,14 +4,17 @@ import { Schema, model } from 'mongoose';
 // Esquema para las Reservaciones
 const reservationSchema = new Schema({
     id_usuario: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: [true, 'El usuario es obligatorio']
     },
     id_restaurante: {
         type: Schema.Types.ObjectId,
         ref: 'Restaurant',
         required: [true, 'El restaurante es obligatorio']
+    },
+    id_sucursal: {
+        type: String,
+        default: ''
     },
     id_mesa: {
         type: Schema.Types.ObjectId,
@@ -29,6 +32,10 @@ const reservationSchema = new Schema({
         type: String,
         enum: ['Confirmada', 'Atendida', 'Cancelada'],
         default: 'Confirmada'
+    },
+    asistio: {
+        type: Boolean,
+        default: false
     },
     activo: {
         type: Boolean,
