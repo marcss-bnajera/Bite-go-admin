@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
-import User from "../src/users/users-model.js";
 
-export const validateJWT = async (req, res, next) => {
+export const validateJWT = (req, res, next) => {
     const authHeader = req.header("Authorization") || req.header("authorization");
 
     if (!authHeader) {
@@ -38,20 +37,17 @@ export const validateJWT = async (req, res, next) => {
             audience: process.env.JWT_AUDIENCE || "BiteGoServices"
         });
 
-        // El claim "role" del .NET se proyecta al campo "rol" esperado por el resto del código
         req.user = {
             uid: decoded.sub,
+            email: decoded.email || '',
+            nombre: decoded.name || '',
+            apellido: decoded.surname || '',
+            username: decoded.username || '',
             rol: decoded.role,
             jti: decoded.jti,
             iat: decoded.iat,
             exp: decoded.exp
         };
-
-        // Enriquecer con id_restaurante desde la DB (el token .NET no lo incluye)
-        if (decoded.sub) {
-            const dbUser = await User.findOne({ auth_id: decoded.sub }).select("id_restaurante").lean();
-            if (dbUser) req.user.id_restaurante = dbUser.id_restaurante;
-        }
 
         next();
     } catch (err) {

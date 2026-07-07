@@ -28,10 +28,6 @@ const userSchema = new Schema({
         type: String,
         trim: true
     },
-    dpi: {
-        type: String,
-        unique: true,
-    },
     rol: {
         type: String,
         required: true,
@@ -52,7 +48,12 @@ const userSchema = new Schema({
         unique: true,
         sparse: true,  // permite null sin romper el unique
         default: null
-    }
+    },
+    direcciones: [{
+        etiqueta: { type: String, trim: true },
+        direccion: { type: String, trim: true },
+        predeterminada: { type: Boolean, default: false }
+    }]
 }, {
     timestamps: true,
     // Esto asegura que al convertir a JSON no se envíe la contraseña por accidente

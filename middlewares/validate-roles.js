@@ -1,3 +1,5 @@
+import User from "../src/users/users-model.js";
+
 export const hasRole = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -18,20 +20,24 @@ export const hasRole = (...roles) => {
 
 /**
  * Verifica que el Admin_Restaurante solo opere sobre su propio restaurante.
- * Se usa cuando el id del restaurante viene en req.params (paramName, por defecto "id").
- *
- * Uso en rutas:
- *   router.post("/:id", validateJWT, hasRole('SuperAdmin','Admin_Restaurante'), checkRestaurantOwnership(), addEvento);
- *   router.put("/:restId/:eventoId", validateJWT, hasRole('SuperAdmin','Admin_Restaurante'), checkRestaurantOwnership('restId'), updateEvento);
+ * Si req.user.id_restaurante no existe (validateJWT ya no consulta DB), lo obtiene aquí.
  */
 export const checkRestaurantOwnership = (paramName = "id") => {
-    return (req, res, next) => {
+    return async (req, res, next) => {
         if (!req.user) {
             return res.status(500).json({ success: false, message: "Se debe validar el token antes que el ownership" });
         }
 
-        // SuperAdmin pasa siempre
         if (req.user.rol === 'SuperAdmin') return next();
+
+        if (!req.user.id_restaurante) {
+            try {
+                const dbUser = await User.findOne({ auth_id: req.user.uid }).select("id_restaurante").lean();
+                if (dbUser) req.user.id_restaurante = dbUser.id_restaurante;
+            } catch (error) {
+                console.error("[checkRestaurantOwnership] Error al consultar usuario:", error.message);
+            }
+        }
 
         const restaurantIdFromParam = req.params[paramName];
 

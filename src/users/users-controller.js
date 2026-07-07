@@ -59,6 +59,7 @@ export const register = async (req, res) => {
             message: "Usuario registrado exitosamente"
         });
     } catch (error) {
+        console.error('[register] Error al registrar usuario:', error.message, error.code);
         res.status(500).json({
             success: false,
             message: "Error al registrar usuario",
@@ -75,8 +76,8 @@ export const updateUser = async (req, res) => {
         const { id } = req.params;
         const { password, email, rol, ...rest } = req.body;
 
-        const { nombre, telefono, direccion, dpi, id_restaurante, activo } = rest;
-        const data = { nombre, telefono, direccion, dpi, id_restaurante, activo };
+        const { nombre, telefono, direccion, id_restaurante, activo } = rest;
+        const data = { nombre, telefono, direccion, id_restaurante, activo };
         Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
         if (password) {
