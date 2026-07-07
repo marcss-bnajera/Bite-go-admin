@@ -6,16 +6,15 @@ import Product from "../products/products-model.js";
  */
 export const createInsumo = async (req, res) => {
     try {
-        // Admin_Restaurante solo puede crear insumos en su restaurante
         if (req.user.rol === 'Admin_Restaurante') {
             req.body.id_restaurante = req.user.id_restaurante;
         }
 
-        const { id_restaurante, nombre_insumo, stock_actual, stock_minimo } = req.body;
-        const existente = await SuppliesInventory.findOne({
-            id_restaurante,
-            nombre_insumo: nombre_insumo.trim()
-        });
+        const { id_restaurante, nombre_insumo, stock_actual, stock_minimo, id_sucursal } = req.body;
+        const query = { id_restaurante, nombre_insumo: nombre_insumo.trim() };
+        if (id_sucursal) query.id_sucursal = id_sucursal;
+        else query.id_sucursal = { $in: [null, ''] };
+        const existente = await SuppliesInventory.findOne(query);
 
         if (existente && !existente.activo) {
             const reactivado = await SuppliesInventory.findByIdAndUpdate(
@@ -33,7 +32,7 @@ export const createInsumo = async (req, res) => {
         if (existente && existente.activo) {
             return res.status(400).json({
                 success: false,
-                message: `Ya existe un insumo activo llamado "${nombre_insumo}" en este restaurante`
+                message: `Ya existe un insumo activo llamado "${nombre_insumo}" en ${id_sucursal ? "esta sucursal" : "este restaurante"}`
             });
         }
 
@@ -51,10 +50,11 @@ export const createInsumo = async (req, res) => {
 export const getInventoryByRestaurant = async (req, res) => {
     try {
         const { id_restaurante } = req.params;
-        const { activo } = req.query;
+        const { activo, id_sucursal } = req.query;
         const query = { id_restaurante };
         if (activo === 'true') query.activo = true;
         else if (activo === 'false') query.activo = false;
+        if (id_sucursal) query.id_sucursal = id_sucursal;
         const inventory = await SuppliesInventory.find(query);
 
         res.status(200).json({
@@ -73,13 +73,16 @@ export const getInventoryByRestaurant = async (req, res) => {
 export const getLowStockAlerts = async (req, res) => {
     try {
         const { id_restaurante } = req.params;
+        const { id_sucursal } = req.query;
 
-        // Buscamos donde stock_actual <= stock_minimo
-        const lowStock = await SuppliesInventory.find({
+        const query = {
             id_restaurante,
             activo: true,
             $expr: { $lte: ["$stock_actual", "$stock_minimo"] }
-        });
+        };
+        if (id_sucursal) query.id_sucursal = id_sucursal;
+
+        const lowStock = await SuppliesInventory.find(query);
 
         res.status(200).json({
             success: true,
@@ -98,13 +101,12 @@ export const getLowStockAlerts = async (req, res) => {
 export const adjustStock = async (req, res) => {
     try {
         const { id } = req.params;
-        const { cantidad } = req.body;
+        const { cantidad, motivo } = req.body;
 
         if (typeof cantidad !== 'number' || isNaN(cantidad)) {
             return res.status(400).json({ success: false, message: "La cantidad debe ser un número válido" });
         }
 
-        // Verificar que la resta no resulte en stock negativo
         if (cantidad < 0) {
             const insumoActual = await SuppliesInventory.findById(id).select('stock_actual');
             if (!insumoActual) return res.status(404).json({ success: false, message: "Insumo no encontrado" });
@@ -118,7 +120,10 @@ export const adjustStock = async (req, res) => {
 
         const insumo = await SuppliesInventory.findByIdAndUpdate(
             id,
-            { $inc: { stock_actual: cantidad } },
+            {
+                $inc: { stock_actual: cantidad },
+                $push: { historial_ajustes: { cantidad, motivo: motivo || '' } }
+            },
             { new: true, runValidators: true }
         );
 
@@ -198,27 +203,29 @@ export const deleteInsumo = async (req, res) => {
 /**
  * Verificar si hay stock suficiente para todos los ingredientes
  */
-export const checkStockAvailability = async (items, id_restaurante) => {
+export const checkStockAvailability = async (items, id_restaurante, id_sucursal) => {
     const faltantes = [];
 
     for (const item of items) {
-        const product = await Product.findById(item.id_producto).populate("receta.id_insumo");
+        const product = await Product.findById(item.id_producto);
         if (!product) continue;
 
         if (product.receta && product.receta.length > 0) {
             for (const ingrediente of product.receta) {
                 const cantidadNecesaria = ingrediente.cantidad_requerida * item.cantidad;
-                const insumoRef = ingrediente.id_insumo;
 
-                const insumo = await SuppliesInventory.findOne({
-                    _id: insumoRef._id,
+                const insumoQuery = {
+                    nombre_insumo: ingrediente.nombre_insumo,
                     id_restaurante,
                     activo: true
-                });
+                };
+                if (id_sucursal) insumoQuery.id_sucursal = id_sucursal;
+
+                const insumo = await SuppliesInventory.findOne(insumoQuery);
 
                 if (!insumo) {
                     faltantes.push(
-                        `"${insumoRef.nombre_insumo}" (requerido para "${product.nombre}"): insumo no existe en el inventario de este restaurante`
+                        `"${ingrediente.nombre_insumo}" (requerido para "${product.nombre}"): insumo no existe en el inventario${id_sucursal ? " de esta sucursal" : ""}`
                     );
                 } else if (insumo.stock_actual < cantidadNecesaria) {
                     faltantes.push(
@@ -233,11 +240,14 @@ export const checkStockAvailability = async (items, id_restaurante) => {
                 if (vaf.afecta_inventario && vaf.insumo_relacionado) {
                     const cantidadNecesaria = (vaf.cantidad_insumo || 1) * item.cantidad;
 
-                    const insumo = await SuppliesInventory.findOne({
+                    const insumoQuery = {
                         id_restaurante,
                         nombre_insumo: vaf.insumo_relacionado,
                         activo: true
-                    });
+                    };
+                    if (id_sucursal) insumoQuery.id_sucursal = id_sucursal;
+
+                    const insumo = await SuppliesInventory.findOne(insumoQuery);
 
                     if (!insumo) {
                         faltantes.push(
@@ -260,46 +270,57 @@ export const checkStockAvailability = async (items, id_restaurante) => {
  * Reducir stock automáticamente desde una orden (atómico).
  * Usa findOneAndUpdate con condición de stock para evitar race conditions.
  */
-export const reduceStockFromOrder = async (items, id_restaurante) => {
-    const deducidos = []; // Para compensar si hay fallo parcial
+export const reduceStockFromOrder = async (items, id_restaurante, id_sucursal) => {
+    const deducidos = [];
     const faltantes = [];
 
     try {
         for (const item of items) {
-            const product = await Product.findById(item.id_producto).populate("receta.id_insumo");
+            const product = await Product.findById(item.id_producto);
             if (!product) continue;
 
             if (product.receta && product.receta.length > 0) {
                 for (const ingrediente of product.receta) {
                     const cantidadADescontar = ingrediente.cantidad_requerida * item.cantidad;
 
-                    // Deducción atómica: solo descuenta si hay stock suficiente
-                    const resultado = await SuppliesInventory.findOneAndUpdate(
-                        {
-                            _id: ingrediente.id_insumo._id,
-                            id_restaurante,
-                            activo: true,
-                            stock_actual: { $gte: cantidadADescontar }
-                        },
+                    const atomicQuery = {
+                        nombre_insumo: ingrediente.nombre_insumo,
+                        id_restaurante,
+                        activo: true,
+                        stock_actual: { $gte: cantidadADescontar }
+                    };
+                    if (id_sucursal) atomicQuery.id_sucursal = id_sucursal;
+
+                    let resultado = await SuppliesInventory.findOneAndUpdate(
+                        atomicQuery,
                         { $inc: { stock_actual: -cantidadADescontar } },
                         { new: true }
                     );
 
-                    if (!resultado) {
-                        // Stock insuficiente o insumo no existe — recopilar info del error
-                        const insumo = await SuppliesInventory.findOne({
-                            _id: ingrediente.id_insumo._id,
+                    if (!resultado && id_sucursal) {
+                        const rootQuery = {
+                            nombre_insumo: ingrediente.nombre_insumo,
                             id_restaurante,
-                            activo: true
-                        });
-                        const nombre = insumo ? insumo.nombre_insumo : ingrediente.id_insumo._id;
+                            activo: true,
+                            stock_actual: { $gte: cantidadADescontar }
+                        };
+                        resultado = await SuppliesInventory.findOneAndUpdate(
+                            rootQuery,
+                            { $inc: { stock_actual: -cantidadADescontar } },
+                            { new: true }
+                        );
+                    }
+
+                    if (!resultado) {
+                        const fallbackQuery = { nombre_insumo: ingrediente.nombre_insumo, id_restaurante, activo: true };
+                        const insumo = await SuppliesInventory.findOne(fallbackQuery);
+                        const nombre = insumo ? insumo.nombre_insumo : ingrediente.nombre_insumo;
                         const disponible = insumo ? insumo.stock_actual : 0;
                         faltantes.push(
                             `"${nombre}" (para "${product.nombre}"): necesitas ${cantidadADescontar} pero solo hay ${disponible}`
                         );
                     } else {
-                        // Registrar para posible compensación
-                        deducidos.push({ id: ingrediente.id_insumo._id, cantidad: cantidadADescontar });
+                        deducidos.push({ nombre: ingrediente.nombre_insumo, id_restaurante, id_sucursal: resultado.id_sucursal, cantidad: cantidadADescontar });
                     }
                 }
             }
@@ -309,13 +330,16 @@ export const reduceStockFromOrder = async (items, id_restaurante) => {
                     if (vaf.afecta_inventario && vaf.insumo_relacionado) {
                         const extraADescontar = (vaf.cantidad_insumo || 1) * item.cantidad;
 
+                        const atomicQuery = {
+                            id_restaurante,
+                            nombre_insumo: vaf.insumo_relacionado,
+                            activo: true,
+                            stock_actual: { $gte: extraADescontar }
+                        };
+                        if (id_sucursal) atomicQuery.id_sucursal = id_sucursal;
+
                         const resultado = await SuppliesInventory.findOneAndUpdate(
-                            {
-                                id_restaurante,
-                                nombre_insumo: vaf.insumo_relacionado,
-                                activo: true,
-                                stock_actual: { $gte: extraADescontar }
-                            },
+                            atomicQuery,
                             { $inc: { stock_actual: -extraADescontar } },
                             { new: true }
                         );
@@ -325,18 +349,19 @@ export const reduceStockFromOrder = async (items, id_restaurante) => {
                                 `"${vaf.insumo_relacionado}" (variación "${vaf.nombre}"): necesitas ${extraADescontar} pero no hay stock suficiente`
                             );
                         } else {
-                            deducidos.push({ id: resultado._id, cantidad: extraADescontar });
+                            deducidos.push({ nombre: vaf.insumo_relacionado, id_restaurante, id_sucursal: resultado.id_sucursal, cantidad: extraADescontar });
                         }
                     }
                 }
             }
         }
 
-        // Si hay faltantes, compensar lo ya descontado
         if (faltantes.length > 0) {
             for (const deduccion of deducidos) {
-                await SuppliesInventory.findByIdAndUpdate(
-                    deduccion.id,
+                const restoreQuery = { nombre_insumo: deduccion.nombre, id_restaurante: deduccion.id_restaurante, activo: true };
+                if (deduccion.id_sucursal) restoreQuery.id_sucursal = deduccion.id_sucursal;
+                await SuppliesInventory.findOneAndUpdate(
+                    restoreQuery,
                     { $inc: { stock_actual: deduccion.cantidad } }
                 );
             }
@@ -347,7 +372,6 @@ export const reduceStockFromOrder = async (items, id_restaurante) => {
 
         return { success: true };
     } catch (error) {
-        // Si ya es nuestro error de stock, relanzar tal cual
         if (error.message.startsWith("Stock insuficiente")) throw error;
         console.error("Error actualizando stock:", error.message);
         throw new Error("Error en actualización automática de stock");
@@ -356,46 +380,66 @@ export const reduceStockFromOrder = async (items, id_restaurante) => {
 /**
  * Ajustar stock cuando se modifica la cantidad de un item ya existente (atómico).
  */
-export const adjustStockFromItemUpdate = async (item, id_restaurante, diferenciaCantidad) => {
+export const adjustStockFromItemUpdate = async (item, id_restaurante, diferenciaCantidad, id_sucursal) => {
     if (diferenciaCantidad === 0) return { success: true };
 
-    const product = await Product.findById(item.id_producto).populate("receta.id_insumo");
+    const product = await Product.findById(item.id_producto);
     if (!product || !product.receta || product.receta.length === 0) return { success: true };
 
-    // Si se está aumentando la cantidad, verificar stock disponible
     if (diferenciaCantidad > 0) {
+        const deducidos = [];
         const faltantes = [];
+
         for (const ingrediente of product.receta) {
             const cantidadNecesaria = ingrediente.cantidad_requerida * diferenciaCantidad;
-            const insumo = await SuppliesInventory.findOne({
-                _id: ingrediente.id_insumo._id,
+            const atomicQuery = {
+                nombre_insumo: ingrediente.nombre_insumo,
                 id_restaurante,
-                activo: true
-            });
-            if (!insumo) {
+                activo: true,
+                stock_actual: { $gte: cantidadNecesaria }
+            };
+            if (id_sucursal) atomicQuery.id_sucursal = id_sucursal;
+
+            const resultado = await SuppliesInventory.findOneAndUpdate(
+                atomicQuery,
+                { $inc: { stock_actual: -cantidadNecesaria } },
+                { new: true }
+            );
+
+            if (resultado) {
+                deducidos.push({ nombre: ingrediente.nombre_insumo, id_restaurante, id_sucursal: resultado.id_sucursal, cantidad: cantidadNecesaria });
+            } else {
+                const fallbackQuery = { nombre_insumo: ingrediente.nombre_insumo, id_restaurante, activo: true };
+                const insumo = await SuppliesInventory.findOne(fallbackQuery);
                 faltantes.push(
-                    `"${ingrediente.id_insumo._id}" (para "${product.nombre}"): insumo no existe`
-                );
-            } else if (insumo.stock_actual < cantidadNecesaria) {
-                faltantes.push(
-                    `"${insumo.nombre_insumo}" (para "${product.nombre}"): necesitas ${cantidadNecesaria} adicionales pero solo hay ${insumo.stock_actual}`
+                    `"${ingrediente.nombre_insumo}" (para "${product.nombre}"): necesitas ${cantidadNecesaria} adicionales${insumo ? ` pero solo hay ${insumo.stock_actual}` : " — insumo no encontrado"}`
                 );
             }
         }
+
         if (faltantes.length > 0) {
+            for (const d of deducidos) {
+                const restoreQuery = { nombre_insumo: d.nombre, id_restaurante: d.id_restaurante, activo: true };
+                if (d.id_sucursal) restoreQuery.id_sucursal = d.id_sucursal;
+                await SuppliesInventory.findOneAndUpdate(
+                    restoreQuery,
+                    { $inc: { stock_actual: d.cantidad } }
+                );
+            }
             throw new Error(
                 `Stock insuficiente para aumentar la cantidad. Ingredientes con problema:\n• ${faltantes.join("\n• ")}`
             );
         }
-    }
-
-    // Aplicar el ajuste atómicamente
-    for (const ingrediente of product.receta) {
-        const ajuste = ingrediente.cantidad_requerida * diferenciaCantidad;
-        await SuppliesInventory.findOneAndUpdate(
-            { _id: ingrediente.id_insumo._id, id_restaurante, activo: true },
-            { $inc: { stock_actual: -ajuste } }
-        );
+    } else {
+        for (const ingrediente of product.receta) {
+            const cantidadDevolver = ingrediente.cantidad_requerida * Math.abs(diferenciaCantidad);
+            const restoreQuery = { nombre_insumo: ingrediente.nombre_insumo, id_restaurante, activo: true };
+            if (id_sucursal) restoreQuery.id_sucursal = id_sucursal;
+            await SuppliesInventory.findOneAndUpdate(
+                restoreQuery,
+                { $inc: { stock_actual: cantidadDevolver } }
+            );
+        }
     }
 
     return { success: true };

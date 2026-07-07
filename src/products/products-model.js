@@ -1,10 +1,10 @@
 import { Schema, model } from 'mongoose';
 
 const recetaSchema = new Schema({
-    id_insumo: {
-        type: Schema.Types.ObjectId,
-        ref: 'SuppliesInventory',
-        required: [true, 'El insumo es obligatorio']
+    nombre_insumo: {
+        type: String,
+        required: [true, 'El nombre del insumo es obligatorio'],
+        trim: true
     },
     cantidad_requerida: {
         type: Number,

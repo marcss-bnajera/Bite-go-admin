@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { validateJWT } from "../../middlewares/validate-jwt.js";
 import { hasRole } from "../../middlewares/validate-roles.js";
 import {
     createInsumo,
@@ -17,7 +16,7 @@ import {
 } from "../../middlewares/suppliesInventory-validators.js";
 
 const router = Router();
-const auth = [validateJWT, hasRole('SuperAdmin', 'Admin_Restaurante')];
+const auth = [hasRole('SuperAdmin', 'Admin_Restaurante')];
 
 // Listar inventario por restaurante (No requiere body, solo param)
 router.get("/restaurant/:id_restaurante", auth, getInventoryByRestaurant);

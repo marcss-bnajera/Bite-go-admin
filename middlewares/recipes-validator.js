@@ -15,9 +15,10 @@ export const validateRecipeIdParam = [
  * Validación para el cuerpo (BODY) de un ingrediente
  */
 export const validateRecipeItemBody = [
-    body('id_insumo')
-        .notEmpty().withMessage('El insumo es obligatorio')
-        .isMongoId().withMessage('El ID del insumo no tiene un formato válido'),
+    body('nombre_insumo')
+        .notEmpty().withMessage('El nombre del insumo es obligatorio')
+        .isString().withMessage('El nombre del insumo debe ser texto')
+        .trim(),
 
     body('cantidad_requerida')
         .notEmpty().withMessage('La cantidad requerida es obligatoria')
