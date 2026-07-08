@@ -85,6 +85,11 @@ const initServer = async (app) => {
             );
         });
 
+        // Health check para Render
+        app.get('/health', (req, res) => {
+            res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+        });
+
     } catch (error) {
 
         console.log(error);
